@@ -1,19 +1,18 @@
 import React, { useState, useEffect } from 'react';
+import Swal from 'sweetalert2';
 import Navbar from "./components/Navbar.jsx";
 import Footer from "./components/Footer.jsx";
-import BookGrid from "./features/books/BookGrid.jsx";
 import BookModal from "./features/books/BookModal.jsx";
 import Bookshelf from "./features/books/Bookshelf.jsx";
 import Favorites from "./features/books/Favorites.jsx";
 import Reviews from "./features/books/Reviews.jsx";
 import BookCard from "./features/books/BookCard.jsx"; 
 import { fetchBooks } from "./features/books/bookService.js";
-import { Search, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 
 export default function App() {
   const [view, setView] = useState('home'); 
 
-  // Initialize and Sync State via LocalStorage with fallback arrays
   const [bookshelf, setBookshelf] = useState(() => {
     const saved = localStorage.getItem('lib_bookshelf');
     return saved ? JSON.parse(saved) : [];
@@ -23,7 +22,6 @@ export default function App() {
     return saved ? JSON.parse(saved) : [];
   });
 
-  // Main Live Book Search Feed states
   const [books, setBooks] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedTerm, setDebouncedTerm] = useState('');
@@ -33,17 +31,14 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Write changes automatically to disk on update loops
   useEffect(() => { localStorage.setItem('lib_bookshelf', JSON.stringify(bookshelf)); }, [bookshelf]);
   useEffect(() => { localStorage.setItem('lib_favorites', JSON.stringify(favorites)); }, [favorites]);
 
-  // Debounce rapid user keystroke search configurations safely (600ms boundary)
   useEffect(() => {
     const timer = setTimeout(() => { setDebouncedTerm(searchTerm); setPage(1); }, 600);
     return () => clearTimeout(timer);
   }, [searchTerm]);
 
-  // Handle live network bindings to fetch catalog cards
   useEffect(() => {
     let isMounted = true;
     if (view !== 'home') return;
@@ -71,12 +66,32 @@ export default function App() {
     return () => { isMounted = false; };
   }, [debouncedTerm, page, view]);
 
-  // Action Mutator Pipelines
+  // SweetAlert2 Enhanced Mutators
   const toggleBookshelf = (clickedBook) => {
     setBookshelf(prev => {
       const exists = prev.some(b => b.id === clickedBook.id);
-      if (exists) return prev.filter(b => b.id !== clickedBook.id);
-      // Hard constraint initialization with baseline default structures
+      if (exists) {
+        Swal.fire({
+          title: 'Removed from Bookshelf',
+          text: `"${clickedBook.title}" has been taken off your tracking shelf.`,
+          icon: 'info',
+          toast: true,
+          position: 'top-end',
+          showConfirmButton: false,
+          timer: 2500
+        });
+        return prev.filter(b => b.id !== clickedBook.id);
+      }
+      
+      Swal.fire({
+        title: 'Added to Bookshelf!',
+        text: `"${clickedBook.title}" is now added to your tracker.`,
+        icon: 'success',
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: 2500
+      });
       return [...prev, { ...clickedBook, rating: 0, status: 'in progress', comments: [] }];
     });
   };
@@ -84,20 +99,58 @@ export default function App() {
   const toggleFavorite = (clickedBook) => {
     setFavorites(prev => {
       const exists = prev.some(f => f.id === clickedBook.id);
-      if (exists) return prev.filter(f => f.id !== clickedBook.id);
+      if (exists) {
+        Swal.fire({
+          title: 'Removed from Favorites',
+          text: `"${clickedBook.title}" removed from your curated likes.`,
+          icon: 'info',
+          toast: true,
+          position: 'top-end',
+          showConfirmButton: false,
+          timer: 2500
+        });
+        return prev.filter(f => f.id !== clickedBook.id);
+      }
+      
+      Swal.fire({
+        title: 'Saved to Favorites!',
+        text: `Liked "${clickedBook.title}"`,
+        icon: 'success',
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: 2500
+      });
       return [...prev, clickedBook];
     });
   };
 
   const handleRateBook = (bookId, newRating) => {
     setBookshelf(prev => prev.map(b => b.id === bookId ? { ...b, rating: newRating } : b));
+    Swal.fire({
+      title: 'Rating Updated!',
+      text: `You gave this book a ${newRating}-star rating.`,
+      icon: 'success',
+      toast: true,
+      position: 'top-end',
+      showConfirmButton: false,
+      timer: 2000
+    });
   };
 
   const handleStatusChange = (bookId, newStatus) => {
     setBookshelf(prev => prev.map(b => b.id === bookId ? { ...b, status: newStatus } : b));
+    Swal.fire({
+      title: 'Status Updated',
+      text: `Reading status set to "${newStatus.toUpperCase()}"`,
+      icon: 'info',
+      toast: true,
+      position: 'top-end',
+      showConfirmButton: false,
+      timer: 2000
+    });
   };
 
-  // Structured Multi-Comment Thread Handler
   const handleAddComment = (bookId, commentText) => {
     const timestampStr = new Date().toLocaleString([], { 
       year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' 
@@ -111,32 +164,36 @@ export default function App() {
 
     setBookshelf(prev => prev.map(b => {
       if (b.id === bookId) {
-        const existingComments = b.comments || [];
-        return {
-          ...b,
-          // Unshift newest entries directly to the top edge of the stack listing
-          comments: [newCommentObj, ...existingComments]
-        };
+        return { ...b, comments: [newCommentObj, ...(b.comments || [])] };
       }
       return b;
     }));
+
+    Swal.fire({
+      title: 'Note Saved!',
+      icon: 'success',
+      toast: true,
+      position: 'top-end',
+      showConfirmButton: false,
+      timer: 2000
+    });
   };
 
   const totalPages = Math.min(Math.ceil(totalResults / 30), 100);
 
   return (
-    <div className="app-container">
+    <div className="flex flex-col min-h-screen bg-slate-50 text-slate-800">
       <Navbar currentView={view} onViewChange={setView} />
       
-      <main>
+      <main className="flex-grow max-w-7xl w-full mx-auto px-4 py-8">
         {view === 'home' && (
           <>
-            <div className="search-container">
-              <div className="search-input-wrapper">
-                <Search className="search-icon" />
+            <div className="mb-8 max-w-xl mx-auto">
+              <div className="relative flex items-center w-full">
+                <Search className="absolute left-4 text-slate-400 w-5 h-5" />
                 <input
                   type="text"
-                  className="search-bar"
+                  className="w-full pl-12 pr-4 py-3 rounded-xl border border-slate-200 bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                   placeholder="Search thousands of books across global archives..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
@@ -145,18 +202,22 @@ export default function App() {
             </div>
 
             {loading && (
-              <div className="loading-box">
-                <span className="loading-text">Querying open library records...</span>
-                <div className="progress-track"><div className="progress-bar-fill"></div></div>
+              <div className="flex flex-col items-center justify-center py-20">
+                <Loader2 className="w-10 h-10 text-blue-500 animate-spin mb-4" />
+                <span className="text-slate-500 font-medium">Querying open library records...</span>
               </div>
             )}
             
-            {error && <div className="status-message error-message">{error}</div>}
+            {error && (
+              <div className="p-4 mb-6 text-sm text-red-700 bg-red-50 rounded-xl border border-red-100 text-center max-w-md mx-auto">
+                {error}
+              </div>
+            )}
             
             {!loading && !error && (
               books.length > 0 ? (
                 <>
-                  <div className="book-grid">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                     {books.map(book => {
                       const shelfMatch = bookshelf.find(b => b.id === book.id);
                       return (
@@ -177,18 +238,26 @@ export default function App() {
                     })}
                   </div>
                   
-                  <div className="pagination-container">
-                    <button className="pagination-btn" onClick={() => setPage(p => Math.max(p - 1, 1))} disabled={page === 1}>
-                      <ChevronLeft size={18} /> Previous
+                  <div className="flex items-center justify-center gap-4 mt-12">
+                    <button 
+                      className="flex items-center gap-1 px-4 py-2 bg-white border border-slate-200 rounded-lg text-sm font-medium hover:bg-slate-50 shadow-sm disabled:opacity-40 disabled:hover:bg-white transition-all"
+                      onClick={() => setPage(p => Math.max(p - 1, 1))} 
+                      disabled={page === 1}
+                    >
+                      <ChevronLeft size={16} /> Previous
                     </button>
-                    <span className="pagination-info">Page <strong>{page}</strong> of {totalPages || 1}</span>
-                    <button className="pagination-btn" onClick={() => setPage(p => Math.min(p + 1, totalPages))} disabled={page >= totalPages}>
-                      Next <ChevronRight size={18} />
+                    <span className="text-sm text-slate-500">Page <strong className="text-slate-800">{page}</strong> of {totalPages || 1}</span>
+                    <button 
+                      className="flex items-center gap-1 px-4 py-2 bg-white border border-slate-200 rounded-lg text-sm font-medium hover:bg-slate-50 shadow-sm disabled:opacity-40 disabled:hover:bg-white transition-all"
+                      onClick={() => setPage(p => Math.min(p + 1, totalPages))} 
+                      disabled={page >= totalPages}
+                    >
+                      Next <ChevronRight size={16} />
                     </button>
                   </div>
                 </>
               ) : (
-                <div className="no-results"><h3>No match records uncovered</h3></div>
+                <div className="text-center py-20 text-slate-400 font-medium">No match records uncovered</div>
               )
             )}
           </>

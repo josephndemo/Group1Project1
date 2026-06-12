@@ -7,19 +7,21 @@ export default function Reviews({ shelfBooks, onSelectBook, onToggleBookshelf, o
 
   if (sortedRatedBooks.length === 0) {
     return (
-      <div className="empty-view-state">
-        <h2>No Rated Books Found</h2>
-        <p>Assign a star rating to books inside your Bookshelf tab to unlock this analytics board.</p>
+      <div className="text-center py-24 max-w-sm mx-auto">
+        <h2 className="text-xl font-bold text-slate-700 mb-2">No Rated Books Found</h2>
+        <p className="text-sm text-slate-400 leading-relaxed">Assign a star rating to books inside your Bookshelf tab to unlock this analytics board.</p>
       </div>
     );
   }
 
   return (
     <div>
-      <h2 style={{ marginBottom: '0.5rem', letterSpacing: '-0.02em' }}>Critiques & Ratings Dashboard</h2>
-      <p style={{ color: 'var(--text-muted)', marginBottom: '2.5rem' }}>Your rated items are ranked automatically from highest score down to lowest.</p>
+      <div className="mb-8">
+        <h2 className="text-2xl font-bold text-slate-800 tracking-tight">Critiques & Reviews Dashboard</h2>
+        <p className="text-sm text-slate-400 mt-1">Your rated items are ranked automatically from highest score down to lowest.</p>
+      </div>
       
-      <div className="book-grid">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
         {sortedRatedBooks.map((book) => (
           <BookCard 
             key={book.id}
@@ -32,7 +34,7 @@ export default function Reviews({ shelfBooks, onSelectBook, onToggleBookshelf, o
             showRating={true}
             onRateBook={onRateBook}
             showComment={true}
-            onAddComment={onAddComment} // Connect explicitly named handler
+            onAddComment={onAddComment}
           />
         ))}
       </div>
