@@ -1,5 +1,7 @@
 import React from 'react';
-import { BookOpen, BookmarkCheck, Heart, Library, MessageSquare } from 'lucide-react';
+// 🎯 IMPORT YOUR CUSTOM LOCAL PNG ASSET
+import customLogo from '../assets/icon1.png';
+import { BookmarkCheck, Heart, Library, MessageSquare } from 'lucide-react';
 
 export default function Navbar({ currentView, onViewChange }) {
   const links = [
@@ -13,7 +15,12 @@ export default function Navbar({ currentView, onViewChange }) {
     <header className="bg-white border-b border-slate-100 sticky top-0 z-40 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
         <div className="flex items-center gap-2 font-bold text-lg text-blue-600 cursor-pointer" onClick={() => onViewChange('home')}>
-          <BookOpen className="w-6 h-6" />
+          {/* 🎯 REPLACED WITH LOCAL LOGO IMAGE TAG */}
+          <img 
+            src={customLogo} 
+            alt="OpenLibrary Logo" 
+            className="w-16 h-16 object-contain"
+          />
           <span>OpenLibrary Hub</span>
         </div>
         
