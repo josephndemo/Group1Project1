@@ -1,7 +1,7 @@
 import React from 'react';
 import { X } from 'lucide-react';
 
-export default function BookModal({ book, onClose }) {
+export default function BookModal({ book, onClose, onEditBook, onDeleteBook }) {
   if (!book) return null;
 
   return (
@@ -20,10 +20,17 @@ export default function BookModal({ book, onClose }) {
             <hr />
             <div className="summary-info">
               <h4>Book Details & Summary</h4>
-              <p><strong>First Published:</strong> {book.year}</p>
-              <p><strong>Publisher:</strong> {book.publisher}</p>
+              <p><strong>First Published:</strong> {book.first_published || book.year || 'N/A'}</p>
+              <p><strong>Publisher:</strong> {book.publisher || 'N/A'}</p>
               {book.isbn && <p><strong>ISBN:</strong> {book.isbn}</p>}
+              {book.notes && <p><strong>Notes:</strong> {book.notes}</p>}
             </div>
+            {(onEditBook || onDeleteBook) && (
+              <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1rem' }}>
+                {onEditBook && <button onClick={() => onEditBook(book)}>Edit</button>}
+                {onDeleteBook && <button onClick={() => onDeleteBook(book)}>Delete</button>}
+              </div>
+            )}
             {book.subjects.length > 0 && (
               <div className="modal-tags">
                 <h4>Subjects:</h4>
