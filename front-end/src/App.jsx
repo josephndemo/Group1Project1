@@ -7,6 +7,7 @@ import Favorites from './features/books/Favorites.jsx';
 import { Search } from 'lucide-react';
 import BookCard from './features/books/BookCard.jsx';
 import BookClub from './features/books/BookClub.jsx';
+import MyReviews from './features/books/MyReviews.jsx';
 import { booksApi } from './api/client.js';
 
 const defaultCover = 'https://images.unsplash.com/photo-1543002588-bfa74002ed7e?auto=format&fit=crop&q=80&w=400';
@@ -377,7 +378,7 @@ export default function App() {
           />
         )}
 
-        {view === 'bookClub' && (
+        {view === 'myReviews' && ( <MyReviews /> )} {view === 'bookClub' && (
           <BookClub
             reviewedBooks={bookshelf}
             onSelectBook={setSelectedBook}
