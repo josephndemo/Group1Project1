@@ -54,3 +54,16 @@ export const shelvesApi = {
     list: () => request('/shelves'),
     create: (payload) => request('/shelves', { method: 'POST', body: JSON.stringify(payload) }),
 };
+
+
+export const reviewsApi = {
+ list: () => request('/reviews'),
+ create: (payload) => request('/reviews', { method: 'POST', body: JSON.stringify(payload) }),
+ update: (id, payload) => request(`/reviews/${id}`, { method: 'PUT', body: JSON.stringify(payload) }),
+ remove: (id) => request(`/reviews/${id}`, { method: 'DELETE' }),
+ listByBook: (bookId) => request(`/books/${bookId}/reviews`),
+};
+
+export const bookClubApi = {
+ recommendations: () => request('/book-club/recommendations'),
+};

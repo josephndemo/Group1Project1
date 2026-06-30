@@ -7,6 +7,7 @@ from flask_cors import CORS
 from sqlalchemy import inspect
 from models import db, User, Shelf, Book
 from schemas import book_schema, book_schema_many, shelf_schema, shelf_schema_many
+from reviews_routes import reviews_bp
 from config import Config
 
 app = Flask(__name__)
@@ -17,6 +18,7 @@ db.init_app(app)
 Bcrypt(app)
 login_manager = LoginManager(app)
 jwt = JWTManager(app)
+app.register_blueprint(reviews_bp)
 
 with app.app_context():
     db.create_all()

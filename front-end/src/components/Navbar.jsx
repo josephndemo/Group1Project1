@@ -1,66 +1,40 @@
 import React from 'react';
-import { BookOpen, BookmarkCheck, Heart, Library, Star } from 'lucide-react';
+import { BookOpen, BookmarkCheck, Heart, Library, Star, MessageSquareText } from 'lucide-react';
 import icon1 from '../assets/icon1.png';
 
 export default function Navbar({ currentView, onViewChange }) {
-  return (
-    <nav className="navbar">
-      <div className="navbar-brand">
-        <img
-          src={icon1}
-          alt="Open Library Hub Logo"
-          className="nav-logo"
-        />
-        <span>OpenLibrary Hub</span>
-      </div>
-      <ul className="navbar-links">
-        <li>
-          <a
-            href="#home"
-            className={currentView === 'home' ? 'active' : ''}
-            onClick={(e) => { e.preventDefault(); onViewChange('home'); }}
-          >
-            <Library size={16} style={{ marginRight: '4px', verticalAlign: 'text-bottom' }} /> Home
-          </a>
-        </li>
-        <li>
-          <a
-            href="#manageBooks"
-            className={currentView === 'manageBooks' ? 'active' : ''}
-            onClick={(e) => { e.preventDefault(); onViewChange('manageBooks'); }}
-          >
-            <BookOpen size={16} style={{ marginRight: '4px', verticalAlign: 'text-bottom' }} /> Manage Books
-          </a>
-        </li>
-        <li>
-          <a
-            href="#bookshelf"
-            className={currentView === 'bookshelf' ? 'active' : ''}
-            onClick={(e) => { e.preventDefault(); onViewChange('bookshelf'); }}
-          >
-            <BookmarkCheck size={16} style={{ marginRight: '4px', verticalAlign: 'text-bottom' }} /> My Bookshelf
-          </a>
-        </li>
-        <li>
-          <a
-            href="#book-club"
-            className={currentView === 'bookClub' ? 'active' : ''}
-            onClick={(e) => { e.preventDefault(); onViewChange('bookClub'); }}
-          >
-            <Star size={16} style={{ marginRight: '4px', verticalAlign: 'text-bottom' }} />
-            Book Club
-          </a>
-        </li>
-        <li>
-          <a
-            href="#favorites"
-            className={currentView === 'favorites' ? 'active' : ''}
-            onClick={(e) => { e.preventDefault(); onViewChange('favorites'); }}
-          >
-            <Heart size={16} style={{ marginRight: '4px', verticalAlign: 'text-bottom' }} /> Favorites
-          </a>
-        </li>
-      </ul>
-    </nav>
-  );
+ const links = [
+  { key: 'home', href: '#home', label: 'Home', Icon: Library },
+  { key: 'manageBooks', href: '#manageBooks', label: 'Manage Books', Icon: BookOpen },
+  { key: 'bookshelf', href: '#bookshelf', label: 'My Bookshelf', Icon: BookmarkCheck },
+  { key: 'bookClub', href: '#book-club', label: 'Book Club', Icon: Star },
+  { key: 'myReviews', href: '#my-reviews', label: 'My Reviews', Icon: MessageSquareText },
+  { key: 'favorites', href: '#favorites', label: 'Favorites', Icon: Heart },
+ ];
+
+ return (
+  <nav className="navbar">
+   <div className="navbar-brand">
+    <img src={icon1} alt="Open Library Hub Logo" className="nav-logo" />
+    <span>OpenLibrary Hub</span>
+   </div>
+
+   <ul className="navbar-links">
+    {links.map(({ key, href, label, Icon }) => (
+     <li key={key}>
+      <a
+       href={href}
+       className={currentView === key ? 'active' : ''}
+       onClick={(e) => {
+        e.preventDefault();
+        onViewChange(key);
+       }}
+      >
+       <Icon size={16} style={{ marginRight: '4px', verticalAlign: 'text-bottom' }} /> {label}
+      </a>
+     </li>
+    ))}
+   </ul>
+  </nav>
+ );
 }
