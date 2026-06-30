@@ -19,14 +19,24 @@ const normalizeBook = (book) => {
     title: book.title || 'Untitled',
     author: book.author || 'Unknown Author',
     year: book.first_published || book.year || 'N/A',
-    coverUrl: book.cover_url || book.coverUrl || defaultCover,
+    coverUrl:
+      book.cover_url && book.cover_url.startsWith('http')
+        ? book.cover_url
+        : book.coverUrl && book.coverUrl.startsWith('http')
+          ? book.coverUrl
+          : defaultCover,
     publisher: book.publisher || 'N/A',
     isbn: book.isbn || null,
     subjects: book.subjects || [],
     rating: book.rating || 0,
     backendId: book.id || null,
     external_id: book.external_id || book.id || null,
-    cover_url: book.cover_url || book.coverUrl || null,
+    cover_url:
+      book.cover_url && book.cover_url.startsWith('http')
+        ? book.cover_url
+        : book.coverUrl && book.coverUrl.startsWith('http')
+          ? book.coverUrl
+          : defaultCover,
     notes: book.notes || '',
     status: book.status || 'want_to_read',
     first_published: book.first_published || book.year || 'N/A',
