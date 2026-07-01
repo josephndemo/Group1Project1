@@ -31,6 +31,11 @@ with app.app_context():
                     db.session.execute(db.text(f'ALTER TABLE books ADD COLUMN {column_name} VARCHAR(255)'))
                 except Exception:
                     pass
+        if 'comment' not in columns:
+            try:
+                db.session.execute(db.text('ALTER TABLE books ADD COLUMN comment TEXT'))
+            except Exception:
+                pass
         db.session.commit()
 
 
@@ -145,6 +150,7 @@ def books():
         title=payload["title"],
         author=payload["author"],
         notes=payload.get("notes"),
+        comment=payload.get("comment"),
         status=payload.get("status", "want_to_read"),
         first_published=payload.get("first_published"),
         publisher=payload.get("publisher"),
@@ -171,7 +177,7 @@ def book_detail(book_id):
 
     if request.method == "PUT":
         payload = request.get_json(silent=True) or {}
-        for field in ["title", "author", "notes", "status", "shelf_id", "first_published", "publisher", "external_id", "cover_url"]:
+        for field in ["title", "author", "notes", "comment", "status", "shelf_id", "first_published", "publisher", "external_id", "cover_url"]:
             if field in payload:
                 setattr(book, field, payload[field])
         db.session.commit()
@@ -183,4 +189,4 @@ def book_detail(book_id):
 
 
 if __name__ == "__main__":
-    app.run(debug=True, host="0.0.0.0", port=5000)
+    app.run(debug=True, host="0.0.0.0", port=5001)

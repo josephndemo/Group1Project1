@@ -6,6 +6,7 @@ class BookSchema(Schema):
     title = fields.Str(required=True, validate=validate.Length(min=1, max=200))
     author = fields.Str(required=True, validate=validate.Length(min=1, max=200))
     notes = fields.Str(allow_none=True)
+    comment = fields.Str(allow_none=True)
     status = fields.Str(load_default="want_to_read")
     first_published = fields.Str(allow_none=True)
     publisher = fields.Str(allow_none=True)

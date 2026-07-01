@@ -1,5 +1,6 @@
 import React from 'react';
 import { Bookmark, Heart, Star, Edit3, Trash2 } from 'lucide-react';
+import { showSuccess } from '../../utils/swal.js';
 
 const fallbackCover =
   'https://images.unsplash.com/photo-1543002588-bfa74002ed7e?auto=format&fit=crop&q=80&w=600';
@@ -11,10 +12,12 @@ export default function BookCard({
   onToggleFavorite,
   isBookshelf,
   isFavorite,
-  showRating,
+  showRating = false,
+  showActions = false,
   onRateBook,
   onEditBook,
-  onDeleteBook
+  onDeleteBook,
+  onProgressChange
 }) {
   const coverImage = book.coverUrl || book.cover_url || fallbackCover;
 
@@ -26,6 +29,16 @@ export default function BookCard({
   const handleAction = (event, callback) => {
     event.stopPropagation();
     if (callback) callback(book);
+  };
+
+  const handleBookshelfAction = (event) => {
+    event.stopPropagation();
+    if (onToggleBookshelf) {
+      onToggleBookshelf(book);
+      if (!isBookshelf) {
+        showSuccess('Added to shelf', `${book.title || 'This book'} is now on your shelf.`);
+      }
+    }
   };
 
   return (
@@ -83,27 +96,29 @@ export default function BookCard({
           </p>
         </div>
 
-        <div className="card-actions">
-          <button
-            type="button"
-            className={`action-btn ${isBookshelf ? 'active-bookshelf' : ''}`}
-            onClick={(event) => handleAction(event, onToggleBookshelf)}
-          >
-            <Bookmark size={15} />
-            {isBookshelf ? 'Saved' : 'Save'}
-          </button>
+        {showActions && (
+          <div className="card-actions">
+            <button
+              type="button"
+              className={`action-btn ${isBookshelf ? 'active-bookshelf' : ''}`}
+              onClick={handleBookshelfAction}
+            >
+              <Bookmark size={15} />
+              {isBookshelf ? 'Added' : 'Add to shelf'}
+            </button>
 
-          <button
-            type="button"
-            className={`action-btn ${isFavorite ? 'active-favorite' : ''}`}
-            onClick={(event) => handleAction(event, onToggleFavorite)}
-          >
-            <Heart size={15} />
-            {isFavorite ? 'Liked' : 'Favorite'}
-          </button>
-        </div>
+            <button
+              type="button"
+              className={`action-btn ${isFavorite ? 'active-favorite' : ''}`}
+              onClick={(event) => handleAction(event, onToggleFavorite)}
+            >
+              <Heart size={15} />
+              {isFavorite ? 'Liked' : 'Favorite'}
+            </button>
+          </div>
+        )}
 
-        {(onEditBook || onDeleteBook) && (
+        {!showActions && (onEditBook || onDeleteBook) && (
           <div className="card-actions secondary-actions">
             {onEditBook && (
               <button
@@ -126,6 +141,24 @@ export default function BookCard({
                 Delete
               </button>
             )}
+          </div>
+        )}
+
+        {isBookshelf && showRating && (
+          <div
+            style={{ marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '1px solid #e5e7eb' }}
+            onClick={(event) => event.stopPropagation()}
+          >
+            <label style={{ display: 'block', marginBottom: '0.4rem', fontWeight: 600 }}>Progress</label>
+            <select
+              value={book.status || 'want_to_read'}
+              onChange={(event) => onProgressChange?.(book.id, event.target.value)}
+              style={{ width: '100%', padding: '0.5rem', borderRadius: '0.5rem', border: '1px solid #d1d5db' }}
+            >
+              <option value="want_to_read">In progress</option>
+              <option value="completed">Completed</option>
+            </select>
+
           </div>
         )}
       </div>

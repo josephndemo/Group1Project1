@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { showAppAlert, showError, showSuccess } from './utils/swal.js';
 import Navbar from './components/Navbar.jsx';
 import Footer from './components/Footer.jsx';
 import BookModal from './features/books/BookModal.jsx';
@@ -7,7 +8,6 @@ import Favorites from './features/books/Favorites.jsx';
 import { Search } from 'lucide-react';
 import BookCard from './features/books/BookCard.jsx';
 import BookClub from './features/books/BookClub.jsx';
-import MyReviews from './features/books/MyReviews.jsx';
 import { booksApi } from './api/client.js';
 
 const defaultCover = 'https://images.unsplash.com/photo-1543002588-bfa74002ed7e?auto=format&fit=crop&q=80&w=400';
@@ -38,6 +38,7 @@ const normalizeBook = (book) => {
           ? book.coverUrl
           : defaultCover,
     notes: book.notes || '',
+    comment: book.comment || '',
     status: book.status || 'want_to_read',
     first_published: book.first_published || book.year || 'N/A',
     publisher: book.publisher || 'N/A',
@@ -108,6 +109,7 @@ export default function App() {
       } catch (err) {
         console.error('Could not load books from backend', err);
         setError('Could not load your books from the backend.');
+        showError('Unable to load books', err.message || 'Could not load your books from the backend.');
       } finally {
         setLoading(false);
       }
@@ -117,7 +119,17 @@ export default function App() {
   }, [user]);
 
   const toggleBookshelf = (clickedBook) => {
-    setSelectedBook(normalizeBook(clickedBook));
+    const normalizedBook = normalizeBook(clickedBook);
+    const key = getBookKey(normalizedBook);
+
+    setBookshelf((prev) => {
+      const exists = prev.some((book) => getBookKey(book) === key);
+      if (exists) {
+        return prev.filter((book) => getBookKey(book) !== key);
+      }
+
+      return [...prev, normalizedBook];
+    });
   };
 
   const toggleFavorite = (clickedBook) => {
@@ -130,6 +142,48 @@ export default function App() {
 
   const handleRateBook = (bookId, newRating) => {
     setBookshelf(prev => prev.map(b => (getBookKey(b) === bookId || b.id === bookId ? { ...b, rating: newRating } : b)));
+  };
+
+  const handleProgressChange = async (bookId, status) => {
+    const normalizedBook = bookshelf.find((entry) => getBookKey(entry) === bookId || entry.id === bookId);
+    const backendId = normalizedBook?.backendId;
+
+    if (!backendId) return;
+
+    try {
+      const updatedBook = await booksApi.update(backendId, { status });
+      const normalizedUpdatedBook = normalizeBook(updatedBook);
+      setBooks((prev) => prev.map((book) => (getBookKey(book) === bookId || book.backendId === backendId ? normalizedUpdatedBook : book)));
+      setBookshelf((prev) => prev.map((book) => (getBookKey(book) === bookId || book.backendId === backendId ? normalizedUpdatedBook : book)));
+      showSuccess('Progress updated', `Marked as ${status === 'completed' ? 'completed' : 'in progress'}.`);
+    } catch (err) {
+      setError(err.message || 'Could not update book progress.');
+      showError('Progress update failed', err.message || 'Could not update book progress.');
+    }
+  };
+
+  const handleSaveComment = async (bookId, comment) => {
+    const normalizedBook = bookshelf.find((entry) => getBookKey(entry) === bookId || entry.id === bookId);
+    const backendId = normalizedBook?.backendId;
+
+    if (!backendId) return;
+
+    const trimmedComment = comment?.trim();
+    if (!trimmedComment) return;
+
+    const existingComment = normalizedBook?.comment || '';
+    const nextComment = existingComment ? `${existingComment}\n\n${trimmedComment}` : trimmedComment;
+
+    try {
+      const updatedBook = await booksApi.update(backendId, { comment: nextComment });
+      const normalizedUpdatedBook = normalizeBook(updatedBook);
+      setBooks((prev) => prev.map((book) => (getBookKey(book) === bookId || book.backendId === backendId ? normalizedUpdatedBook : book)));
+      setBookshelf((prev) => prev.map((book) => (getBookKey(book) === bookId || book.backendId === backendId ? normalizedUpdatedBook : book)));
+      showSuccess('Comment saved', 'Your comment was added to this book.');
+    } catch (err) {
+      setError(err.message || 'Could not save your comment.');
+      showError('Comment save failed', err.message || 'Could not save your comment.');
+    }
   };
 
   const handleLogout = () => {
@@ -146,6 +200,35 @@ export default function App() {
 
     if (!user) {
       setAuthNotice('Please sign in to add a book.');
+      return;
+    }
+
+    if (editingBook?.backendId) {
+      try {
+        const payload = {
+          title: editDraft.title.trim(),
+          author: editDraft.author.trim(),
+          status: editingBook.status || 'want_to_read',
+        };
+
+        if (editDraft.notes.trim()) payload.notes = editDraft.notes.trim();
+        if (editDraft.first_published.trim()) payload.first_published = editDraft.first_published.trim();
+        if (editDraft.publisher.trim()) payload.publisher = editDraft.publisher.trim();
+        if (editDraft.cover_url.trim()) payload.cover_url = editDraft.cover_url.trim();
+
+        const updatedBook = await booksApi.update(editingBook.backendId, payload);
+        const normalizedUpdatedBook = normalizeBook(updatedBook);
+        setBooks((prev) => prev.map((book) => (getBookKey(book) === getBookKey(editingBook) || book.backendId === editingBook.backendId ? normalizedUpdatedBook : book)));
+        setBookshelf((prev) => prev.map((book) => (getBookKey(book) === getBookKey(editingBook) || book.backendId === editingBook.backendId ? normalizedUpdatedBook : book)));
+        setSelectedBook(normalizedUpdatedBook);
+        setEditingBook(null);
+        setEditDraft({ title: '', author: '', notes: '', first_published: '', publisher: '', cover_url: '' });
+        setAuthNotice('Book updated.');
+        showSuccess('Book updated', 'Your changes were saved.');
+      } catch (err) {
+        setCustomBookError(err.message || 'Could not update your book.');
+        showError('Book update failed', err.message || 'Could not update your book.');
+      }
       return;
     }
 
@@ -175,11 +258,12 @@ export default function App() {
 
       const normalizedCreatedBook = normalizeBook(createdBook);
       setBooks((prev) => [normalizedCreatedBook, ...prev]);
-      setBookshelf((prev) => [normalizedCreatedBook, ...prev]);
       setCustomBook({ title: '', author: '', notes: '', first_published: '', publisher: '', cover_url: '' });
       setAuthNotice('Your book was added to your library.');
+      showSuccess('Book added', 'Your book was added to your library.');
     } catch (err) {
       setCustomBookError(err.message || 'Could not add your book.');
+      showError('Book not added', err.message || 'Could not add your book.');
     }
   };
 
@@ -220,8 +304,10 @@ export default function App() {
       setSelectedBook(normalizedUpdatedBook);
       setEditingBook(null);
       setAuthNotice('Book updated.');
+      showSuccess('Book updated', 'Your changes were saved.');
     } catch (err) {
       setError(err.message || 'Could not update your book.');
+      showError('Book update failed', err.message || 'Could not update your book.');
     }
   };
 
@@ -238,8 +324,10 @@ export default function App() {
       setSelectedBook(null);
       setEditingBook(null);
       setAuthNotice('Book deleted.');
+      showSuccess('Book deleted', 'The book was removed from your library.');
     } catch (err) {
       setError(err.message || 'Could not delete your book.');
+      showError('Delete failed', err.message || 'Could not delete your book.');
     }
   };
 
@@ -254,11 +342,6 @@ export default function App() {
       <Navbar currentView={view} onViewChange={setView} />
 
       <main>
-        {/* Login UI is temporarily disabled. The app uses the demo library view instead. */}
-        <div style={{ display: 'flex', justifyContent: 'flex-end', margin: '1rem 0' }}>
-          <span style={{ marginRight: '1rem' }}>Viewing demo library</span>
-        </div>
-
         {authNotice && <div className="status-message">{authNotice}</div>}
 
         {view === 'home' && (
@@ -297,10 +380,9 @@ export default function App() {
                       onToggleFavorite={toggleFavorite}
                       isBookshelf={bookshelf.some(saved => getBookKey(saved) === getBookKey(book))}
                       isFavorite={favorites.some(favorite => getBookKey(favorite) === getBookKey(book))}
-                      showRating={bookshelf.some(saved => getBookKey(saved) === getBookKey(book))}
+                      showRating={false}
+                      showActions={true}
                       onRateBook={handleRateBook}
-                      onEditBook={handleOpenEditBook}
-                      onDeleteBook={handleDeleteBook}
                     />
                   ))}
                 </div>
@@ -312,59 +394,134 @@ export default function App() {
         )}
 
         {view === 'manageBooks' && (
-          <>
-            <div style={{ maxWidth: 900, margin: '1rem auto 2rem', padding: '1rem 1.25rem', border: '1px solid #ddd', borderRadius: 12 }}>
-              <h3 style={{ marginBottom: '0.75rem' }}>Manage your books</h3>
+          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 2fr) minmax(300px, 1fr)', gap: '1.5rem', alignItems: 'start' }}>
+            <div>
+              <h3 style={{ marginBottom: '1rem' }}>Available books</h3>
+              {visibleBooks.length > 0 ? (
+                <div className="book-grid">
+                  {visibleBooks.map((book) => (
+                    <BookCard
+                      key={book.id}
+                      book={book}
+                      onSelect={setSelectedBook}
+                      onToggleBookshelf={toggleBookshelf}
+                      onToggleFavorite={toggleFavorite}
+                      isBookshelf={bookshelf.some((saved) => getBookKey(saved) === getBookKey(book))}
+                      isFavorite={favorites.some((favorite) => getBookKey(favorite) === getBookKey(book))}
+                      showRating={false}
+                      showActions={false}
+                      onEditBook={handleOpenEditBook}
+                      onDeleteBook={handleDeleteBook}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="no-results"><h3>No books available yet.</h3></div>
+              )}
+            </div>
+
+            <div style={{ padding: '1rem 1.25rem', border: '1px solid #ddd', borderRadius: 12, background: '#fff' }}>
+              <h3 style={{ marginBottom: '0.75rem' }}>{editingBook ? 'Edit book' : 'Add a book'}</h3>
               <form onSubmit={handleAddCustomBook}>
                 <div style={{ display: 'grid', gap: '0.75rem' }}>
                   <input
                     type="text"
                     placeholder="Title"
-                    value={customBook.title}
-                    onChange={(event) => setCustomBook((prev) => ({ ...prev, title: event.target.value }))}
+                    value={editingBook ? editDraft.title : customBook.title}
+                    onChange={(event) => {
+                      if (editingBook) {
+                        setEditDraft((prev) => ({ ...prev, title: event.target.value }));
+                      } else {
+                        setCustomBook((prev) => ({ ...prev, title: event.target.value }));
+                      }
+                    }}
                     style={{ padding: '0.65rem' }}
                   />
                   <input
                     type="text"
                     placeholder="Author"
-                    value={customBook.author}
-                    onChange={(event) => setCustomBook((prev) => ({ ...prev, author: event.target.value }))}
+                    value={editingBook ? editDraft.author : customBook.author}
+                    onChange={(event) => {
+                      if (editingBook) {
+                        setEditDraft((prev) => ({ ...prev, author: event.target.value }));
+                      } else {
+                        setCustomBook((prev) => ({ ...prev, author: event.target.value }));
+                      }
+                    }}
                     style={{ padding: '0.65rem' }}
                   />
                   <input
                     type="text"
                     placeholder="First Published"
-                    value={customBook.first_published}
-                    onChange={(event) => setCustomBook((prev) => ({ ...prev, first_published: event.target.value }))}
+                    value={editingBook ? editDraft.first_published : customBook.first_published}
+                    onChange={(event) => {
+                      if (editingBook) {
+                        setEditDraft((prev) => ({ ...prev, first_published: event.target.value }));
+                      } else {
+                        setCustomBook((prev) => ({ ...prev, first_published: event.target.value }));
+                      }
+                    }}
                     style={{ padding: '0.65rem' }}
                   />
                   <input
                     type="text"
                     placeholder="Publisher"
-                    value={customBook.publisher}
-                    onChange={(event) => setCustomBook((prev) => ({ ...prev, publisher: event.target.value }))}
+                    value={editingBook ? editDraft.publisher : customBook.publisher}
+                    onChange={(event) => {
+                      if (editingBook) {
+                        setEditDraft((prev) => ({ ...prev, publisher: event.target.value }));
+                      } else {
+                        setCustomBook((prev) => ({ ...prev, publisher: event.target.value }));
+                      }
+                    }}
                     style={{ padding: '0.65rem' }}
                   />
                   <input
                     type="text"
                     placeholder="Cover Image URL"
-                    value={customBook.cover_url}
-                    onChange={(event) => setCustomBook((prev) => ({ ...prev, cover_url: event.target.value }))}
+                    value={editingBook ? editDraft.cover_url : customBook.cover_url}
+                    onChange={(event) => {
+                      if (editingBook) {
+                        setEditDraft((prev) => ({ ...prev, cover_url: event.target.value }));
+                      } else {
+                        setCustomBook((prev) => ({ ...prev, cover_url: event.target.value }));
+                      }
+                    }}
                     style={{ padding: '0.65rem' }}
                   />
                   <textarea
                     placeholder="Notes"
-                    value={customBook.notes}
-                    onChange={(event) => setCustomBook((prev) => ({ ...prev, notes: event.target.value }))}
+                    value={editingBook ? editDraft.notes : customBook.notes}
+                    onChange={(event) => {
+                      if (editingBook) {
+                        setEditDraft((prev) => ({ ...prev, notes: event.target.value }));
+                      } else {
+                        setCustomBook((prev) => ({ ...prev, notes: event.target.value }));
+                      }
+                    }}
                     style={{ padding: '0.65rem', minHeight: '90px' }}
                   />
-                  <button type="submit" style={{ padding: '0.7rem 1rem', width: 'fit-content' }}>Save book</button>
+                  <div style={{ display: 'flex', gap: '0.75rem' }}>
+                    <button type="submit" style={{ padding: '0.7rem 1rem', width: 'fit-content' }}>{editingBook ? 'Update book' : 'Save book'}</button>
+                    {editingBook && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingBook(null);
+                          setEditDraft({ title: '', author: '', notes: '', first_published: '', publisher: '', cover_url: '' });
+                          setCustomBookError('');
+                        }}
+                        style={{ padding: '0.7rem 1rem', width: 'fit-content' }}
+                      >
+                        Cancel
+                      </button>
+                    )}
+                  </div>
                 </div>
               </form>
               {customBookError && <p style={{ color: 'red', marginTop: '0.75rem' }}>{customBookError}</p>}
             </div>
-
-          </>
+          </div>
         )}
 
         {view === 'bookshelf' && (
@@ -375,6 +532,7 @@ export default function App() {
             onToggleFavorite={toggleFavorite}
             favorites={favorites}
             onRateBook={handleRateBook}
+            onProgressChange={handleProgressChange}
           />
         )}
 
@@ -388,7 +546,7 @@ export default function App() {
           />
         )}
 
-        {view === 'myReviews' && ( <MyReviews /> )} {view === 'bookClub' && (
+        {view === 'bookClub' && (
           <BookClub
             reviewedBooks={bookshelf}
             onSelectBook={setSelectedBook}
@@ -396,6 +554,7 @@ export default function App() {
             onToggleFavorite={toggleFavorite}
             favorites={favorites}
             onRateBook={handleRateBook}
+            onSaveComment={handleSaveComment}
           />
         )}
       </main>

@@ -60,9 +60,9 @@ body {
 main {
   flex: 1;
   width: 100%;
-  max-width: 1280px;
+  max-width: 1440px;
   margin: 0 auto;
-  padding: 3rem 1.5rem 4rem;
+  padding: 1.25rem 1rem 2rem;
 }
 
 /* App Core Sticky Footer Layout */
@@ -70,6 +70,7 @@ main {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  width: 100%;
 }
 
 /* Global Status Shells */
@@ -95,12 +96,12 @@ main {
    2. MODERN NAVIGATION BAR
    ========================================================================== */
 .navbar {
-  min-height: 76px;
+  min-height: 70px;
   display: flex;
   justify-content: space-between;
   align-items: center;
   background: rgba(255, 255, 255, 0.88);
-  padding: 0.75rem 2rem;
+  padding: 0.65rem 1.25rem;
   border-bottom: 1px solid rgba(226, 232, 240, 0.9);
   position: sticky;
   top: 0;
@@ -157,16 +158,16 @@ main {
    ========================================================= */
 
 .book-grid {
-  width: min(1180px, 100%);
+  width: 100%;
   margin: 0 auto;
   display: grid;
-  grid-template-columns: repeat(3, minmax(260px, 1fr));
-  gap: 2rem;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1rem;
   align-items: stretch;
 }
 
 .book-card {
-  min-height: 620px;
+  min-height: 480px;
   background: rgba(255, 255, 255, 0.96);
   border: 1px solid rgba(226, 232, 240, 0.9);
   border-radius: 24px;
@@ -192,7 +193,7 @@ main {
 }
 
 .card-image-wrapper {
-  height: 330px;
+  height: 240px;
   width: 100%;
   background:
     radial-gradient(circle at top, rgba(255, 255, 255, 0.8), transparent 35%),
@@ -200,13 +201,13 @@ main {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 2rem;
+  padding: 1rem;
   border-bottom: 1px solid rgba(226, 232, 240, 0.9);
 }
 
 .book-cover-image {
-  width: 170px;
-  height: 245px;
+  width: 140px;
+  height: 200px;
   object-fit: cover;
   border-radius: 12px;
   background: #f8fafc;
@@ -222,17 +223,17 @@ main {
 
 .card-content {
   flex: 1;
-  padding: 1.35rem 1.35rem 1.4rem;
+  padding: 1rem 1rem 1.1rem;
   display: flex;
   flex-direction: column;
 }
 
 .book-meta {
-  min-height: 82px;
+  min-height: 70px;
 }
 
 .book-title {
-  font-size: 1.12rem;
+  font-size: 1rem;
   line-height: 1.25;
   font-weight: 800;
   color: #0f172a;
@@ -305,11 +306,11 @@ main {
 
 .book-details {
   display: grid;
-  gap: 0.65rem;
-  padding: 0.95rem 0;
+  gap: 0.45rem;
+  padding: 0.7rem 0;
   border-top: 1px solid #f1f5f9;
   border-bottom: 1px solid #f1f5f9;
-  margin-bottom: 1rem;
+  margin-bottom: 0.75rem;
 }
 
 .book-details p {
@@ -342,7 +343,7 @@ main {
 }
 
 .action-btn {
-  min-height: 40px;
+  min-height: 36px;
   border: 1px solid #e2e8f0;
   background: #ffffff;
   color: #475569;
@@ -556,7 +557,7 @@ main {
 .footer {
   background-color: var(--bg-card);
   border-top: 1px solid var(--border-color);
-  padding: 2rem 0;
+  padding: 1.25rem 0;
   text-align: center;
   margin-top: auto;
 }
@@ -582,9 +583,12 @@ main {
   to { transform: translateY(0); opacity: 1; }
 }
 
-@media (max-width: 1100px) {
-  /* Scale down to 2 columns on intermediate viewports */
-  .book-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2rem; }
+@media (max-width: 1200px) {
+  .book-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+@media (max-width: 900px) {
+  .book-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 @media (max-width: 768px) {
@@ -596,7 +600,7 @@ main {
 
 @media (max-width: 640px) {
   /* Force clean single column on strict mobile interfaces */
-  .book-grid { grid-template-columns: 1fr; }
+  .book-grid { grid-template-columns: 1fr; gap: 0.85rem; }
   .modal-body { flex-direction: column; align-items: center; text-align: center; padding: 2rem; }
   .modal-image img { max-width: 150px; }
   .tags-container { justify-content: center; }
@@ -606,9 +610,9 @@ main {
    7. LIVE SEARCH BAR SYSTEM
    ========================================================================== */
 .search-container {
-  max-width: 600px;
+  max-width: 100%;
   width: 100%;
-  margin: 0 auto 3rem auto;
+  margin: 0 auto 1.25rem auto;
   position: relative;
 }
 
@@ -629,7 +633,7 @@ main {
 
 .search-bar {
   width: 100%;
-  padding: 1rem 1rem 1rem 3.25rem;
+  padding: 0.9rem 0.95rem 0.9rem 3rem;
   font-size: 1.1rem;
   font-weight: 500;
   border-radius: var(--radius-md);

@@ -34,7 +34,7 @@ This project now has a React frontend and a Flask backend that work together for
 
 The backend runs at:
 ```bash
-http://127.0.0.1:5000
+http://127.0.0.1:5001
 ```
 
 ## Frontend setup
@@ -79,8 +79,8 @@ http://127.0.0.1:5173
 
 ## Notes
 
-- The frontend expects the backend to be running on port 5000.
+- The frontend expects the backend to be running on port 5001.
 - If you want to use a different API URL, set the Vite environment variable:
   ```bash
-  VITE_API_BASE_URL=http://127.0.0.1:5000
+  VITE_API_BASE_URL=http://127.0.0.1:5001
   ```

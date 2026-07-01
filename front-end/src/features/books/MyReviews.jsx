@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { reviewsApi } from '../../api/client.js';
 
-export default function MyReviews() {
+export default function MyReviews({ completedBooks = [] }) {
  const [reviews, setReviews] = useState([]);
  const [loading, setLoading] = useState(true);
  const [error, setError] = useState('');
@@ -52,6 +52,21 @@ export default function MyReviews() {
   <section>
    <h2>My Reviews</h2>
    <p>Manage the ratings and written reviews you have submitted.</p>
+
+   {completedBooks.length > 0 && (
+    <div style={{ marginBottom: '1.25rem' }}>
+     <h3>Completed books</h3>
+     <div style={{ display: 'grid', gap: '0.75rem' }}>
+      {completedBooks.map((book) => (
+       <article key={book.id} className="book-card">
+        <h4>{book.title || 'Untitled book'}</h4>
+        <p>By {book.author || 'Unknown Author'}</p>
+        {book.comment && <p><strong>Comment:</strong> {book.comment}</p>}
+       </article>
+      ))}
+     </div>
+    </div>
+   )}
 
    {reviews.length === 0 ? (
     <div className="empty-state">

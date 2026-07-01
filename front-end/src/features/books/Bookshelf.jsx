@@ -1,7 +1,7 @@
 import React from 'react';
 import BookCard from './BookCard.jsx';
 
-export default function Bookshelf({ shelfBooks, onSelectBook, onToggleBookshelf, onToggleFavorite, favorites, onRateBook }) {
+export default function Bookshelf({ shelfBooks, onSelectBook, onToggleBookshelf, onToggleFavorite, favorites, onRateBook, onProgressChange }) {
   if (shelfBooks.length === 0) {
     return (
       <div className="empty-view-state">
@@ -26,6 +26,7 @@ export default function Bookshelf({ shelfBooks, onSelectBook, onToggleBookshelf,
             isFavorite={favorites.some(f => f.id === book.id)}
             showRating={true}
             onRateBook={onRateBook}
+            onProgressChange={onProgressChange}
           />
         ))}
       </div>

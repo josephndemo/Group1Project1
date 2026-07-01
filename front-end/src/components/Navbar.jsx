@@ -1,5 +1,5 @@
 import React from 'react';
-import { BookOpen, BookmarkCheck, Heart, Library, Star, MessageSquareText } from 'lucide-react';
+import { BookOpen, BookmarkCheck, Heart, Library, Star } from 'lucide-react';
 import icon1 from '../assets/icon1.png';
 
 export default function Navbar({ currentView, onViewChange }) {
@@ -8,7 +8,6 @@ export default function Navbar({ currentView, onViewChange }) {
   { key: 'manageBooks', href: '#manageBooks', label: 'Manage Books', Icon: BookOpen },
   { key: 'bookshelf', href: '#bookshelf', label: 'My Bookshelf', Icon: BookmarkCheck },
   { key: 'bookClub', href: '#book-club', label: 'Book Club', Icon: Star },
-  { key: 'myReviews', href: '#my-reviews', label: 'My Reviews', Icon: MessageSquareText },
   { key: 'favorites', href: '#favorites', label: 'Favorites', Icon: Heart },
  ];
 

@@ -62,6 +62,7 @@ class Book(db.Model):
     title = db.Column(db.String(200), nullable=False)
     author = db.Column(db.String(200), nullable=False)
     notes = db.Column(db.Text, nullable=True)
+    comment = db.Column(db.Text, nullable=True)
     status = db.Column(db.String(50), nullable=False, default="want_to_read")
     first_published = db.Column(db.String(50), nullable=True)
     publisher = db.Column(db.String(200), nullable=True)
