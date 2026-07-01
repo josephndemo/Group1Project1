@@ -1,5 +1,5 @@
 import React from 'react';
-import { Bookmark, Heart, Star, Edit3, Trash2 } from 'lucide-react';
+import { Bookmark, Heart, Star, Edit3, Trash2, X } from 'lucide-react';
 import { showSuccess } from '../../utils/swal.js';
 
 const fallbackCover =
@@ -37,12 +37,28 @@ export default function BookCard({
       onToggleBookshelf(book);
       if (!isBookshelf) {
         showSuccess('Added to shelf', `${book.title || 'This book'} is now on your shelf.`);
+      } else {
+        showSuccess('Removed from shelf', `${book.title || 'This book'} was removed from your shelf.`);
       }
     }
   };
 
   return (
     <article className="book-card" onClick={() => onSelect(book)}>
+      {isBookshelf && (
+        <button
+          type="button"
+          className="remove-from-shelf-btn"
+          onClick={(event) => {
+            event.stopPropagation();
+            handleBookshelfAction(event);
+          }}
+          aria-label="Remove from shelf"
+        >
+          <X size={15} />
+        </button>
+      )}
+
       <div className="card-image-wrapper">
         <img
           src={coverImage}
