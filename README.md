@@ -29,19 +29,19 @@ https://openlibrary-one.vercel.app/
 
 ### Home Page
 
-![Home Page](./src/assets/home-page.png)
+![Home Page](./images/home.png)
 
 ### Bookshelf Tracker
 
-![Bookshelf](./src/assets/bookshelf.png)
+![Bookshelf](./images/bookshelf.png)
 
 ### Favorites
 
-![Favorites](./src/assets/favorites.png)
+![Favorites](./images/favorites.png)
 
 ### Reviews & Notes
 
-![Reviews](./src/assets/reviews.png)
+![Reviews](./images/reviews.png)
 
 ---
 
