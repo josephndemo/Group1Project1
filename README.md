@@ -1,8 +1,8 @@
 # OpenLibrary Hub
 
-A modern, responsive Single Page Application (SPA) for discovering, organizing, and tracking books using the Open Library API.
+A full-stack book discovery and tracking application with a React frontend and Flask backend.
 
-OpenLibrary Hub enables readers to search millions of books, manage personalized reading lists, save favorites, rate books, and maintain reading notes—all within a streamlined and intuitive user experience.
+OpenLibrary Hub enables readers to search millions of books, manage personalized reading lists, save favorites, rate books, and maintain reading notes through a modern user interface backed by a persistent API.
 
 ---
 
@@ -21,11 +21,26 @@ The application integrates with the Open Library REST API to provide access to o
 ---
 ## Deployed Application link
 
-[https://openlibrary-one.vercel.app/](https://openlibrary20.vercel.app/)
+https://openlibrary20.vercel.app/
 
 ### Backend
 
 https://group1project1.onrender.com
+
+---
+
+## Full-Stack Architecture
+
+### Frontend
+
+- React + Vite SPA
+- Handles UI rendering, state management, and API calls
+
+### Backend
+
+- Flask REST API
+- Handles authentication, shelves, books, and reviews
+- Persists data with SQLAlchemy models
 
 ## Application Preview
 
@@ -110,6 +125,9 @@ https://group1project1.onrender.com
 | Category      | Technology            |
 | ------------- | --------------------- |
 | Frontend      | React 19              |
+| Backend       | Flask                 |
+| ORM           | SQLAlchemy            |
+| Auth          | JWT (flask-jwt-extended) |
 | Build Tool    | Vite                  |
 | Styling       | Tailwind CSS v4       |
 | Icons         | Lucide React          |
@@ -122,30 +140,50 @@ https://group1project1.onrender.com
 ## Project Structure
 
 ```text
-my-library-app/
-├── public/
-├── src/
-│   ├── assets/
-│   │   └── icon1.png
-│   ├── components/
-│   │   ├── Navbar.jsx
-│   │   └── Footer.jsx
-│   ├── features/
-│   │   └── books/
-│   │       ├── BookCard.jsx
-│   │       ├── BookGrid.jsx
-│   │       ├── BookModal.jsx
-│   │       ├── Bookshelf.jsx
-│   │       ├── Favorites.jsx
-│   │       ├── Reviews.jsx
-│   │       └── bookService.js
-│   ├── App.jsx
-│   ├── index.css
-│   └── main.jsx
-├── vite.config.js
-├── package.json
+Group1Project1/
+├── back-end/
+│   ├── app.py
+│   ├── models.py
+│   ├── reviews_routes.py
+│   ├── schemas.py
+│   ├── config.py
+│   ├── Pipfile
+│   └── README.md
+├── front-end/
+│   ├── src/
+│   │   ├── components/
+│   │   ├── features/
+│   │   ├── api/
+│   │   ├── App.jsx
+│   │   └── main.jsx
+│   ├── package.json
+│   └── vite.config.js
 └── README.md
 ```
+
+## Backend Structure
+
+```text
+back-end/
+├── app.py                # Flask app entrypoint and route registration
+├── config.py             # App and database configuration
+├── models.py             # SQLAlchemy models (User, Shelf, Book, Review)
+├── schemas.py            # Marshmallow serialization schemas
+├── reviews_routes.py     # Review and book-club recommendation routes
+├── seed.py               # Seed script for initial/demo data
+├── requirements.txt      # pip dependencies
+├── Pipfile               # pipenv dependency definition
+├── Pipfile.lock          # locked pipenv dependency versions
+├── .env.example          # environment variable template
+└── instance/             # local instance data (e.g., sqlite db)
+```
+
+### Backend Layers
+
+* Entry Layer: `app.py` initializes Flask, CORS, JWT, and blueprints.
+* Data Layer: `models.py` defines database entities and relationships.
+* Serialization Layer: `schemas.py` controls request/response data shapes.
+* Route Layer: `app.py` and `reviews_routes.py` expose REST endpoints.
 
 ## Getting Started
 
@@ -153,7 +191,9 @@ my-library-app/
 
 Before running the project, ensure you have:
 
-* Node.js (v18 or later)
+* Python 3.12+
+* pipenv
+* Node.js 20.19+ or 22.12+
 * npm (included with Node.js)
 
 ---
@@ -161,30 +201,98 @@ Before running the project, ensure you have:
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/josephndemo/capstone_library.git
+git clone https://github.com/josephndemo/Group1Project1.git
 
-cd capstone_library/my-library-app
+cd Group1Project1
 ```
 
-### 2. Install Dependencies
+### 2. Configure and Run Backend
 
 ```bash
+cd back-end
+pip install pipenv
+pipenv install
+cp .env.example .env
+pipenv run python app.py
+```
+
+Backend runs at:
+
+```text
+http://127.0.0.1:5001
+```
+
+### 3. Configure and Run Frontend
+
+```bash
+cd ../front-end
 npm install
-```
-
-### 3. Start Development Server
-
-```bash
 npm run dev
 ```
 
-### 4. Open in Browser
+Frontend runs at:
+
+```text
+http://127.0.0.1:5173
+```
+
+### 4. Optional Frontend API Override
+
+If you need to override the default API URL:
+
+```bash
+VITE_API_BASE_URL=http://127.0.0.1:5001
+```
+
+### 5. Open in Browser
 
 Visit:
 
 ```text
 http://localhost:5173
 ```
+
+---
+
+## Backend API Overview
+
+### Health
+
+* `GET /health`
+
+### Auth
+
+* `POST /auth/register`
+* `POST /auth/login`
+
+### Shelves
+
+* `GET /shelves`
+* `POST /shelves`
+* `GET /shelves/<id>`
+* `PUT /shelves/<id>`
+* `DELETE /shelves/<id>`
+
+### Books
+
+* `GET /books`
+* `POST /books`
+* `GET /books/<id>`
+* `PUT /books/<id>`
+* `DELETE /books/<id>`
+
+### Reviews
+
+* `GET /reviews`
+* `POST /reviews`
+* `GET /reviews/<id>`
+* `PUT /reviews/<id>`
+* `DELETE /reviews/<id>`
+* `GET /books/<id>/reviews`
+
+### Book Club
+
+* `GET /book-club/recommendations`
 
 ---
 
@@ -254,7 +362,6 @@ Through this project, I gained practical experience in:
 
 ### Phase 2
 
-* Flask or Node.js backend integration
 * PostgreSQL database
 * RESTful API services
 
