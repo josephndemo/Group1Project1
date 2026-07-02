@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { showAppAlert, showError, showSuccess } from './utils/swal.js';
+import { useState, useEffect } from 'react';
+import { showError, showSuccess } from './utils/swal.js';
 import Navbar from './components/Navbar.jsx';
 import Footer from './components/Footer.jsx';
 import BookModal from './features/books/BookModal.jsx';
@@ -7,7 +7,7 @@ import Bookshelf from './features/books/Bookshelf.jsx';
 import Favorites from './features/books/Favorites.jsx';
 import { Search } from 'lucide-react';
 import BookCard from './features/books/BookCard.jsx';
-import BookClub from './features/books/BookClub.jsx';
+import BookClub from './features/bookClub/BookClub.jsx';
 import { booksApi } from './api/client.js';
 
 const defaultCover = 'https://images.unsplash.com/photo-1543002588-bfa74002ed7e?auto=format&fit=crop&q=80&w=400';
@@ -41,7 +41,6 @@ const normalizeBook = (book) => {
     comment: book.comment || '',
     status: book.status || 'want_to_read',
     first_published: book.first_published || book.year || 'N/A',
-    publisher: book.publisher || 'N/A',
   };
 };
 
@@ -339,7 +338,11 @@ export default function App() {
 
   return (
     <div className="app-container">
-      <Navbar currentView={view} onViewChange={setView} />
+      <Navbar
+        currentView={view}
+        onViewChange={setView}
+        onLogout={handleLogout}
+      />
 
       <main>
         {authNotice && <div className="status-message">{authNotice}</div>}

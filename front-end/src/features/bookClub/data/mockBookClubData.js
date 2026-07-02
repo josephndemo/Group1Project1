@@ -1,0 +1,101 @@
+export const mockBookClubBooks = [
+  {
+    id: 'lantern-keeper',
+    title: 'The Lantern Keeper',
+    author: 'Priya Nair',
+    genre: 'Historical Fiction',
+    publicationYear: 2024,
+    status: 'Read',
+    coverUrl:
+      'https://images.unsplash.com/photo-1533928298208-27ff66555d8d?auto=format&fit=crop&q=80&w=800',
+    description:
+      'A layered historical novel about memory, inheritance, and the keeper of a coastal lighthouse after a family secret resurfaces.',
+    price: 16.99,
+    averageRating: 4.8,
+    reviewCount: 142,
+    recommendationScore: 96,
+    rank: 1,
+    popularityScore: 92,
+    reviews: [
+      {
+        id: 'review-1',
+        rating: 5,
+        comment: 'Beautifully written and emotionally precise. Highly recommended.',
+        reviewerName: 'Mark',
+        createdAt: '2026-06-04',
+      },
+      {
+        id: 'review-2',
+        rating: 5,
+        comment: 'The atmosphere stayed with me for days.',
+        reviewerName: 'Anonymous Reader',
+        createdAt: '2026-06-02',
+      },
+    ],
+  },
+  {
+    id: 'midnight-orchard',
+    title: 'The Midnight Orchard',
+    author: 'Elena Brooks',
+    genre: 'Literary Mystery',
+    publicationYear: 2023,
+    status: 'In progress',
+    coverUrl:
+      'https://images.unsplash.com/photo-1516979187457-637abb4f9353?auto=format&fit=crop&q=80&w=800',
+    description:
+      'A quiet mystery set around an abandoned orchard, a missing botanist, and a town that remembers more than it says.',
+    price: 14.99,
+    averageRating: 4.7,
+    reviewCount: 156,
+    recommendationScore: 94,
+    rank: 2,
+    popularityScore: 88,
+    reviews: [
+      {
+        id: 'review-3',
+        rating: 5,
+        comment: 'Slow-burn mystery with excellent character work.',
+        reviewerName: 'Nina',
+        createdAt: '2026-06-01',
+      },
+    ],
+  },
+  {
+    id: 'salt-static',
+    title: 'Salt & Static',
+    author: 'Mina Torres',
+    genre: 'Speculative Fiction',
+    publicationYear: 2025,
+    status: 'In progress',
+    coverUrl:
+      'https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?auto=format&fit=crop&q=80&w=800',
+    description:
+      'A speculative coastal story about signal towers, climate migration, and the strange messages carried through static.',
+    price: 18.5,
+    averageRating: 4.6,
+    reviewCount: 119,
+    recommendationScore: 91,
+    rank: 3,
+    popularityScore: 84,
+    reviews: [],
+  },
+  {
+    id: 'paper-maps',
+    title: 'Paper Maps',
+    author: 'Jonas Reed',
+    genre: 'Adventure',
+    publicationYear: 2022,
+    status: 'Read',
+    coverUrl:
+      'https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&q=80&w=800',
+    description:
+      'A warm adventure novel about an antique mapmaker, a lost archive, and the people who cross continents to find home.',
+    price: 12.99,
+    averageRating: 4.5,
+    reviewCount: 98,
+    recommendationScore: 87,
+    rank: 4,
+    popularityScore: 79,
+    reviews: [],
+  },
+];
