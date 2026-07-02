@@ -25,6 +25,7 @@ export default function Bookshelf({ shelfBooks, onSelectBook, onToggleBookshelf,
             isBookshelf={true}
             isFavorite={favorites.some(f => f.id === book.id)}
             showRating={true}
+            showRemoveButton={true}
             onRateBook={onRateBook}
             onProgressChange={onProgressChange}
           />

@@ -10,10 +10,13 @@ export default function BookClub({ onSelectBook, reviewedBooks = [], onSaveComme
  const [loading, setLoading] = useState(true);
  const [error, setError] = useState('');
  const [commentDrafts, setCommentDrafts] = useState({});
- const booksForDiscussion = (reviewedBooks || []).map((book) => ({
-  ...book,
-  comments: (book.comment || '').split(/\n{2,}/).filter(Boolean),
- }));
+ const [openConversationId, setOpenConversationId] = useState(null);
+ const booksForDiscussion = (reviewedBooks || [])
+  .map((book) => ({
+   ...book,
+   comments: (book.comment || '').split(/\n{2,}/).filter(Boolean),
+  }))
+  .filter((book) => book.status === 'completed' || book.comments.length > 0);
 
  useEffect(() => {
   const loadRecommendations = async () => {
@@ -45,66 +48,96 @@ export default function BookClub({ onSelectBook, reviewedBooks = [], onSaveComme
    <h2>Discussion Forum</h2>
    <p>Pick a book, join the conversation, and add your thoughts to the thread.</p>
 
-   <div className="book-grid" style={{ marginBottom: '2rem' }}>
-    {booksForDiscussion.map((book) => (
-     <article
-      key={book.id}
-      className="book-card"
-      onClick={() => onSelectBook && onSelectBook(book)}
-      style={{ cursor: onSelectBook ? 'pointer' : 'default' }}
-     >
-      <img
-       src={book.coverUrl || book.cover_url || defaultCover}
-       alt={book.title}
-       style={{ width: '100%', height: '220px', objectFit: 'cover', borderRadius: '12px' }}
-      />
-      <div style={{ paddingTop: '0.75rem' }}>
-       <h3>{book.title}</h3>
-       <p>By {book.author}</p>
-       <div style={{ marginTop: '0.6rem', display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
-         <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.9rem', color: '#374151' }}>
-           <BookOpen size={14} />
-           {book.status === 'completed' ? 'Read' : 'In progress'}
-         </span>
-         <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.9rem', color: '#374151' }}>
-           <MessageSquare size={14} />
-           {book.comments.length} comment{book.comments.length === 1 ? '' : 's'}
-         </span>
-       </div>
-       <div style={{ marginTop: '0.8rem', display: 'grid', gap: '0.45rem', padding: '0.6rem', background: '#f8fafc', borderRadius: '0.7rem' }}>
-        {book.comments.length === 0 ? (
-         <p style={{ margin: 0, fontSize: '0.95rem', color: '#64748b' }}>No comments yet. Start the discussion.</p>
-        ) : (
-         book.comments.map((entry, index) => (
-          <p key={`${book.id}-${index}`} style={{ margin: 0, fontSize: '0.95rem', color: '#374151' }}>
-           {entry}
-          </p>
-         ))
-        )}
-       </div>
-       <textarea
-        value={commentDrafts[book.id] ?? ''}
-        onChange={(event) => setCommentDrafts((prev) => ({ ...prev, [book.id]: event.target.value }))}
-        placeholder={`Add your comment about ${book.title}`}
-        style={{ width: '100%', minHeight: '80px', marginTop: '0.7rem', padding: '0.5rem', borderRadius: '0.5rem', border: '1px solid #d1d5db' }}
-       />
-       <button
-        type="button"
-        onClick={(event) => {
-         event.stopPropagation();
-         const draft = (commentDrafts[book.id] || '').trim();
-         if (draft) {
-          onSaveComment?.(book.id, draft);
-          setCommentDrafts((prev) => ({ ...prev, [book.id]: '' }));
-         }
-        }}
-        style={{ marginTop: '0.6rem', padding: '0.5rem 0.8rem', borderRadius: '0.5rem', border: '1px solid #2563eb', background: '#2563eb', color: '#fff' }}
+   <div className="book-grid book-club-feed" style={{ marginBottom: '2rem' }}>
+    {booksForDiscussion.length === 0 ? (
+     <div className="empty-state" style={{ gridColumn: '1 / -1' }}>
+      <h3>No discussions yet.</h3>
+      <p>Books with comments will appear here once readers start a conversation.</p>
+     </div>
+    ) : (
+     booksForDiscussion.map((book) => {
+      const isOpen = openConversationId === book.id;
+      return (
+       <article
+        key={book.id}
+        className="book-card book-club-post"
+        onClick={() => onSelectBook && onSelectBook(book)}
+        style={{ cursor: onSelectBook ? 'pointer' : 'default' }}
        >
-        Add comment
-       </button>
-      </div>
-     </article>
-    ))}
+        <div className="book-club-post-header">
+         <div className="book-club-avatar">{(book.author || 'U').charAt(0).toUpperCase()}</div>
+         <div>
+          <h3>{book.title}</h3>
+          <p>by {book.author} • {book.status === 'completed' ? 'Finished reading' : 'Currently reading'}</p>
+         </div>
+        </div>
+
+        <div className="book-club-post-body">
+         <img
+          src={book.coverUrl || book.cover_url || defaultCover}
+          alt={book.title}
+         />
+         <div className="book-club-post-copy">
+          <p className="book-club-post-text">
+            {book.comments[0] || 'A lively discussion is underway for this book.'}
+          </p>
+         </div>
+        </div>
+
+        <div className="book-club-post-actions">
+         <button
+          type="button"
+          className="book-club-action-btn"
+          onClick={(event) => {
+           event.stopPropagation();
+           setOpenConversationId((current) => (current === book.id ? null : book.id));
+          }}
+         >
+          <MessageSquare size={15} />
+          {book.comments.length} comment{book.comments.length === 1 ? '' : 's'}
+         </button>
+        </div>
+
+         {isOpen && (
+          <div
+           onClick={(event) => event.stopPropagation()}
+           className="book-club-conversation"
+          >
+           <div className="book-club-thread">
+            {book.comments.map((entry, index) => (
+             <div key={`${book.id}-${index}`} className="book-club-thread-item">
+              <strong>{book.author}</strong>
+              <p>{entry}</p>
+             </div>
+            ))}
+           </div>
+           <div className="book-club-comment-box">
+            <label>Join conversation</label>
+            <textarea
+             value={commentDrafts[book.id] ?? ''}
+             onChange={(event) => setCommentDrafts((prev) => ({ ...prev, [book.id]: event.target.value }))}
+             placeholder={`Write something about ${book.title}`}
+            />
+            <button
+             type="button"
+             onClick={(event) => {
+              event.stopPropagation();
+              const draft = (commentDrafts[book.id] || '').trim();
+              if (draft) {
+               onSaveComment?.(book.id, draft);
+               setCommentDrafts((prev) => ({ ...prev, [book.id]: '' }));
+              }
+             }}
+            >
+             Add comment
+            </button>
+           </div>
+          </div>
+         )}
+       </article>
+      );
+     })
+    )}
    </div>
 
    <h2>Book Club Recommendations</h2>

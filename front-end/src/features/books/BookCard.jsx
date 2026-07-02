@@ -14,6 +14,7 @@ export default function BookCard({
   isFavorite,
   showRating = false,
   showActions = false,
+  showRemoveButton = false,
   onRateBook,
   onEditBook,
   onDeleteBook,
@@ -45,7 +46,7 @@ export default function BookCard({
 
   return (
     <article className="book-card" onClick={() => onSelect(book)}>
-      {isBookshelf && (
+      {showRemoveButton && isBookshelf && (
         <button
           type="button"
           className="remove-from-shelf-btn"
