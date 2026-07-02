@@ -1,6 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { BookOpen, BookMarked, MessageSquare } from 'lucide-react';
-import { Star } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { BookOpen, MessageSquare, Star } from 'lucide-react';
 import { bookClubApi } from '../../api/client.js';
 
 const defaultCover = 'https://images.unsplash.com/photo-1543002588-bfa74002ed7e?auto=format&fit=crop&q=80&w=400';

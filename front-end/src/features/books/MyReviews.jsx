@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { reviewsApi } from '../../api/client.js';
 
 export default function MyReviews({ completedBooks = [] }) {
@@ -22,8 +22,32 @@ export default function MyReviews({ completedBooks = [] }) {
  };
 
  useEffect(() => {
-  loadReviews();
- }, []);
+    let cancelled = false;
+
+    async function loadInitialReviews() {
+    try {
+    const data = await reviewsApi.list();
+
+    if (!cancelled) {
+        setReviews(data);
+    }
+    } catch (err) {
+    if (!cancelled) {
+        setError(err.message || 'Could not load your reviews.');
+    }
+    } finally {
+    if (!cancelled) {
+        setLoading(false);
+    }
+    }
+    }
+
+    loadInitialReviews();
+
+    return () => {
+    cancelled = true;
+    };
+    }, []);
 
  const startEdit = (review) => {
   setEditingId(review.id);

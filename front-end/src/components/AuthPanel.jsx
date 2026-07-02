@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { authApi } from '../api/client.js';
 
 export default function AuthPanel({ onAuthSuccess }) {

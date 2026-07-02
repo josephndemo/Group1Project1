@@ -34,7 +34,8 @@ const request = async (path, options = {}) => {
         if (error instanceof Error) {
             throw error;
         }
-        throw new Error('Request failed');
+
+        throw new Error('Request failed', { cause: error });
     }
 };
 

@@ -1,4 +1,3 @@
-import React from 'react';
 import BookCard from './BookCard.jsx';
 
 export default function Bookshelf({ shelfBooks, onSelectBook, onToggleBookshelf, onToggleFavorite, favorites, onRateBook, onProgressChange }) {

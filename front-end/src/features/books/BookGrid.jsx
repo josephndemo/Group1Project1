@@ -1,4 +1,3 @@
-import React from 'react';
 import BookCard from './BookCard.jsx';
 
 export default function BookGrid({ books, onSelectBook }) {

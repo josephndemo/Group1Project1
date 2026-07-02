@@ -1,4 +1,3 @@
-import React from 'react';
 import { BookOpen, BookmarkCheck, Heart, Library, Star } from 'lucide-react';
 import icon1 from '../assets/icon1.png';
 
