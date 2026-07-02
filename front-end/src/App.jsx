@@ -405,9 +405,16 @@ export default function App() {
         )}
 
         {view === 'manageBooks' && (
-          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 2fr) minmax(300px, 1fr)', gap: '1.5rem', alignItems: 'start' }}>
-            <div>
-              <h3 style={{ marginBottom: '1rem' }}>Available books</h3>
+          <div className="manage-books-layout">
+            <div className="manage-books-library-column">
+              <div className="manage-books-section-header">
+                <div>
+                  <p className="manage-books-kicker">Library inventory</p>
+                  <h3>Available books</h3>
+                </div>
+                <span className="manage-books-pill">{visibleBooks.length} titles</span>
+              </div>
+
               {visibleBooks.length > 0 ? (
                 <div className="book-grid">
                   {visibleBooks.map((book) => (
@@ -431,107 +438,141 @@ export default function App() {
               )}
             </div>
 
-            <div style={{ padding: '1rem 1.25rem', border: '1px solid #ddd', borderRadius: 12, background: '#fff' }}>
-              <h3 style={{ marginBottom: '0.75rem' }}>{editingBook ? 'Edit book' : 'Add a book'}</h3>
-              <form onSubmit={handleAddCustomBook}>
-                <div style={{ display: 'grid', gap: '0.75rem' }}>
-                  <input
-                    type="text"
-                    placeholder="Title"
-                    value={editingBook ? editDraft.title : customBook.title}
-                    onChange={(event) => {
-                      if (editingBook) {
-                        setEditDraft((prev) => ({ ...prev, title: event.target.value }));
-                      } else {
-                        setCustomBook((prev) => ({ ...prev, title: event.target.value }));
-                      }
-                    }}
-                    style={{ padding: '0.65rem' }}
-                  />
-                  <input
-                    type="text"
-                    placeholder="Author"
-                    value={editingBook ? editDraft.author : customBook.author}
-                    onChange={(event) => {
-                      if (editingBook) {
-                        setEditDraft((prev) => ({ ...prev, author: event.target.value }));
-                      } else {
-                        setCustomBook((prev) => ({ ...prev, author: event.target.value }));
-                      }
-                    }}
-                    style={{ padding: '0.65rem' }}
-                  />
-                  <input
-                    type="text"
-                    placeholder="First Published"
-                    value={editingBook ? editDraft.first_published : customBook.first_published}
-                    onChange={(event) => {
-                      if (editingBook) {
-                        setEditDraft((prev) => ({ ...prev, first_published: event.target.value }));
-                      } else {
-                        setCustomBook((prev) => ({ ...prev, first_published: event.target.value }));
-                      }
-                    }}
-                    style={{ padding: '0.65rem' }}
-                  />
-                  <input
-                    type="text"
-                    placeholder="Publisher"
-                    value={editingBook ? editDraft.publisher : customBook.publisher}
-                    onChange={(event) => {
-                      if (editingBook) {
-                        setEditDraft((prev) => ({ ...prev, publisher: event.target.value }));
-                      } else {
-                        setCustomBook((prev) => ({ ...prev, publisher: event.target.value }));
-                      }
-                    }}
-                    style={{ padding: '0.65rem' }}
-                  />
-                  <input
-                    type="text"
-                    placeholder="Cover Image URL"
-                    value={editingBook ? editDraft.cover_url : customBook.cover_url}
-                    onChange={(event) => {
-                      if (editingBook) {
-                        setEditDraft((prev) => ({ ...prev, cover_url: event.target.value }));
-                      } else {
-                        setCustomBook((prev) => ({ ...prev, cover_url: event.target.value }));
-                      }
-                    }}
-                    style={{ padding: '0.65rem' }}
-                  />
-                  <textarea
-                    placeholder="Notes"
-                    value={editingBook ? editDraft.notes : customBook.notes}
-                    onChange={(event) => {
-                      if (editingBook) {
-                        setEditDraft((prev) => ({ ...prev, notes: event.target.value }));
-                      } else {
-                        setCustomBook((prev) => ({ ...prev, notes: event.target.value }));
-                      }
-                    }}
-                    style={{ padding: '0.65rem', minHeight: '90px' }}
-                  />
-                  <div style={{ display: 'flex', gap: '0.75rem' }}>
-                    <button type="submit" style={{ padding: '0.7rem 1rem', width: 'fit-content' }}>{editingBook ? 'Update book' : 'Save book'}</button>
-                    {editingBook && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setEditingBook(null);
-                          setEditDraft({ title: '', author: '', notes: '', first_published: '', publisher: '', cover_url: '' });
-                          setCustomBookError('');
-                        }}
-                        style={{ padding: '0.7rem 1rem', width: 'fit-content' }}
-                      >
-                        Cancel
-                      </button>
-                    )}
-                  </div>
+            <aside className="manage-books-panel">
+              <div className="manage-books-panel-header">
+                <div>
+                  <p className="manage-books-kicker">Quick add</p>
+                  <h3>{editingBook ? 'Edit book' : 'Add a book'}</h3>
+                </div>
+                <span className="manage-books-badge">{editingBook ? 'Update' : 'New'}</span>
+              </div>
+
+              <form className="manage-book-form" onSubmit={handleAddCustomBook}>
+                <div className="manage-book-field-grid">
+                  <label className="manage-book-field">
+                    <span>Title</span>
+                    <input
+                      className="manage-book-input"
+                      type="text"
+                      placeholder="Enter the title"
+                      value={editingBook ? editDraft.title : customBook.title}
+                      onChange={(event) => {
+                        if (editingBook) {
+                          setEditDraft((prev) => ({ ...prev, title: event.target.value }));
+                        } else {
+                          setCustomBook((prev) => ({ ...prev, title: event.target.value }));
+                        }
+                      }}
+                    />
+                  </label>
+
+                  <label className="manage-book-field">
+                    <span>Author</span>
+                    <input
+                      className="manage-book-input"
+                      type="text"
+                      placeholder="Who wrote it?"
+                      value={editingBook ? editDraft.author : customBook.author}
+                      onChange={(event) => {
+                        if (editingBook) {
+                          setEditDraft((prev) => ({ ...prev, author: event.target.value }));
+                        } else {
+                          setCustomBook((prev) => ({ ...prev, author: event.target.value }));
+                        }
+                      }}
+                    />
+                  </label>
+
+                  <label className="manage-book-field">
+                    <span>First published</span>
+                    <input
+                      className="manage-book-input"
+                      type="text"
+                      placeholder="Year or edition"
+                      value={editingBook ? editDraft.first_published : customBook.first_published}
+                      onChange={(event) => {
+                        if (editingBook) {
+                          setEditDraft((prev) => ({ ...prev, first_published: event.target.value }));
+                        } else {
+                          setCustomBook((prev) => ({ ...prev, first_published: event.target.value }));
+                        }
+                      }}
+                    />
+                  </label>
+
+                  <label className="manage-book-field">
+                    <span>Publisher</span>
+                    <input
+                      className="manage-book-input"
+                      type="text"
+                      placeholder="Publisher name"
+                      value={editingBook ? editDraft.publisher : customBook.publisher}
+                      onChange={(event) => {
+                        if (editingBook) {
+                          setEditDraft((prev) => ({ ...prev, publisher: event.target.value }));
+                        } else {
+                          setCustomBook((prev) => ({ ...prev, publisher: event.target.value }));
+                        }
+                      }}
+                    />
+                  </label>
+
+                  <label className="manage-book-field">
+                    <span>Cover image URL</span>
+                    <input
+                      className="manage-book-input"
+                      type="text"
+                      placeholder="https://example.com/cover.jpg"
+                      value={editingBook ? editDraft.cover_url : customBook.cover_url}
+                      onChange={(event) => {
+                        if (editingBook) {
+                          setEditDraft((prev) => ({ ...prev, cover_url: event.target.value }));
+                        } else {
+                          setCustomBook((prev) => ({ ...prev, cover_url: event.target.value }));
+                        }
+                      }}
+                    />
+                  </label>
+
+                  <label className="manage-book-field">
+                    <span>Notes</span>
+                    <textarea
+                      className="manage-book-textarea"
+                      placeholder="Add a quick note or reading reminder"
+                      value={editingBook ? editDraft.notes : customBook.notes}
+                      onChange={(event) => {
+                        if (editingBook) {
+                          setEditDraft((prev) => ({ ...prev, notes: event.target.value }));
+                        } else {
+                          setCustomBook((prev) => ({ ...prev, notes: event.target.value }));
+                        }
+                      }}
+                    />
+                  </label>
+                </div>
+
+                <div className="manage-book-actions">
+                  <button className="manage-book-submit-btn" type="submit">
+                    {editingBook ? 'Update book' : 'Save book'}
+                  </button>
+                  {editingBook && (
+                    <button
+                      className="manage-book-cancel-btn"
+                      type="button"
+                      onClick={() => {
+                        setEditingBook(null);
+                        setEditDraft({ title: '', author: '', notes: '', first_published: '', publisher: '', cover_url: '' });
+                        setCustomBookError('');
+                      }}
+                    >
+                      Cancel
+                    </button>
+                  )}
                 </div>
               </form>
-              {customBookError && <p style={{ color: 'red', marginTop: '0.75rem' }}>{customBookError}</p>}
-            </div>
+
+              {customBookError && <p className="manage-book-error">{customBookError}</p>}
+            </aside>
           </div>
         )}
 
