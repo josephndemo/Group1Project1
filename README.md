@@ -39,6 +39,11 @@ https://openlibrary-one.vercel.app/
 
 ![Favorites](./images/favorites.png)
 
+
+### Manage Books
+![Manage books](./images/managebooks.png
+
+
 ### Reviews & Notes
 
 ![Reviews](./images/reviews.png)
