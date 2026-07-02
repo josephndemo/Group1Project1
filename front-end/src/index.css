@@ -565,6 +565,17 @@ main {
   cursor: pointer;
 }
 
+.swal2-app-popup {
+  border-radius: 18px;
+}
+
+.swal2-app-confirm,
+.swal2-app-cancel {
+  border-radius: 999px !important;
+  padding: 0.6rem 1rem !important;
+  font-weight: 700 !important;
+}
+
 /* Responsive card layout */
 @media (max-width: 1100px) {
   .book-grid {

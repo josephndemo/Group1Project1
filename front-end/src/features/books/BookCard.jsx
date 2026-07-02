@@ -1,4 +1,5 @@
 import { Bookmark, Heart, Star, Edit3, Trash2, X } from 'lucide-react';
+import { showInfo, showSuccess } from '../../utils/swal.js';
 
 const fallbackCover =
   'https://images.unsplash.com/photo-1543002588-bfa74002ed7e?auto=format&fit=crop&q=80&w=600';
@@ -33,6 +34,23 @@ export default function BookCard({
   const handleBookshelfAction = (event) => {
     event.stopPropagation();
     onToggleBookshelf?.(book);
+
+    if (isBookshelf) {
+      showInfo('Removed from shelf', `${book?.title || 'This book'} was removed from your shelf.`);
+    } else {
+      showSuccess('Added to shelf', `${book?.title || 'This book'} is now on your shelf.`);
+    }
+  };
+
+  const handleFavoriteAction = (event) => {
+    event.stopPropagation();
+    onToggleFavorite?.(book);
+
+    if (isFavorite) {
+      showInfo('Removed from favorites', `${book?.title || 'This book'} was removed from your favorites.`);
+    } else {
+      showSuccess('Added to favorites', `${book?.title || 'This book'} was added to your favorites.`);
+    }
   };
 
   return (
@@ -119,7 +137,7 @@ export default function BookCard({
             <button
               type="button"
               className={`action-btn ${isFavorite ? 'active-favorite' : ''}`}
-              onClick={(event) => handleAction(event, onToggleFavorite)}
+              onClick={handleFavoriteAction}
             >
               <Heart size={15} />
               {isFavorite ? 'Liked' : 'Favorite'}

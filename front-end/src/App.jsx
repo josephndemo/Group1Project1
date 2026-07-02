@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { showError, showSuccess } from './utils/swal.js';
+import { showError, showInfo, showSuccess } from './utils/swal.js';
 import Navbar from './components/Navbar.jsx';
 import Footer from './components/Footer.jsx';
 import BookModal from './features/books/BookModal.jsx';
@@ -124,9 +124,11 @@ export default function App() {
     setBookshelf((prev) => {
       const exists = prev.some((book) => getBookKey(book) === key);
       if (exists) {
+        showInfo('Removed from shelf', `${normalizedBook?.title || 'This book'} was removed from your shelf.`);
         return prev.filter((book) => getBookKey(book) !== key);
       }
 
+      showSuccess('Added to shelf', `${normalizedBook?.title || 'This book'} is now on your shelf.`);
       return [...prev, normalizedBook];
     });
   };
@@ -134,7 +136,12 @@ export default function App() {
   const toggleFavorite = (clickedBook) => {
     setFavorites(prev => {
       const exists = prev.some(f => f.id === clickedBook.id);
-      if (exists) return prev.filter(f => f.id !== clickedBook.id);
+      if (exists) {
+        showInfo('Removed from favorites', `${clickedBook?.title || 'This book'} was removed from your favorites.`);
+        return prev.filter(f => f.id !== clickedBook.id);
+      }
+
+      showSuccess('Added to favorites', `${clickedBook?.title || 'This book'} was added to your favorites.`);
       return [...prev, clickedBook];
     });
   };
@@ -192,6 +199,7 @@ export default function App() {
     setBooks([]);
     setBookshelf([]);
     setAuthNotice('Signed out.');
+    showInfo('Signed out', 'You have been signed out of the library.');
   };
 
   const handleAddCustomBook = async (event) => {

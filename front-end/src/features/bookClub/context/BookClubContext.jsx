@@ -2,6 +2,7 @@ import { useEffect, useReducer } from 'react';
 import { bookClubService } from '../services/bookClubService.js';
 import { rankBooks } from '../utils/ranking.js';
 import { BookClubContext } from './bookClubContext.js';
+import { showError, showSuccess } from '../../../utils/swal.js';
 
 const initialState = {
   books: [],
@@ -74,10 +75,12 @@ export function BookClubProvider({ children }) {
       const books = await bookClubService.getBooks();
       dispatch({ type: 'LOAD_SUCCESS', payload: books });
     } catch (error) {
+      const message = error.message || 'Could not load Book Club books.';
       dispatch({
         type: 'LOAD_ERROR',
-        payload: error.message || 'Could not load Book Club books.',
+        payload: message,
       });
+      showError('Book Club unavailable', message);
     }
   }
 
@@ -104,13 +107,16 @@ export function BookClubProvider({ children }) {
       const refreshedBooks = await bookClubService.getBooks();
       dispatch({ type: 'LOAD_SUCCESS', payload: refreshedBooks });
       dispatch({ type: 'SUBMIT_REVIEW_SUCCESS' });
+      showSuccess('Review posted', 'Your review was shared with the club.');
     } catch (error) {
       await loadBooks();
 
+      const message = error.message || 'Could not submit review.';
       dispatch({
         type: 'SUBMIT_REVIEW_ERROR',
-        payload: error.message || 'Could not submit review.',
+        payload: message,
       });
+      showError('Review failed', message);
     }
   }
 
