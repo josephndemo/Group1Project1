@@ -14,6 +14,14 @@ from config import Config
 app = Flask(__name__)
 app.config.from_object(Config)
 
+db_uri = app.config.get("SQLALCHEMY_DATABASE_URI", "")
+if db_uri.startswith("postgresql://"):
+    app.logger.info("Database backend: postgresql")
+elif db_uri.startswith("sqlite://"):
+    app.logger.info("Database backend: sqlite")
+else:
+    app.logger.info("Database backend: unknown")
+
 allowed_origins = [
     origin.strip()
     for origin in os.getenv(
@@ -57,11 +65,11 @@ def _initialize_database():
         except Exception as exc:
             app.logger.warning("Database upgrade failed, creating tables directly: %s", exc)
 
-        # Ensure required tables exist even when migrations are partially applied.
-        db.create_all()
-
-        # Guard against older DBs that don't yet have the role column.
         try:
+            # Ensure required tables exist even when migrations are partially applied.
+            db.create_all()
+
+            # Guard against older DBs that don't yet have the role column.
             inspector = inspect(db.engine)
             user_columns = {column["name"] for column in inspector.get_columns("users")}
             if "role" not in user_columns:
@@ -71,7 +79,7 @@ def _initialize_database():
                 db.session.commit()
         except Exception as exc:
             db.session.rollback()
-            app.logger.warning("Could not verify/repair users.role column: %s", exc)
+            app.logger.warning("Startup schema initialization skipped: %s", exc)
 
 
 _initialize_database()

@@ -16,7 +16,7 @@ class Config:
     SQLALCHEMY_DATABASE_URI = _normalize_database_url(
         os.getenv("DATABASE_URL")
         or os.getenv("POSTGRES_URL")
-        or "postgresql:///library_db"
+        or "sqlite:///app.db"
     )
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     TESTING = False
