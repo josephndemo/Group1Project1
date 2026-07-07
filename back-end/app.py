@@ -169,9 +169,13 @@ def login():
     if not identifier or not password:
         return jsonify({"error": "identifier and password are required"}), 400
 
-    user = User.query.filter((User.username == identifier) | (User.email == identifier)).first()
-    if not user or not bcrypt.check_password_hash(user.password_hash, password):
-        return jsonify({"error": "invalid credentials"}), 401
+    try:
+        user = User.query.filter((User.username == identifier) | (User.email == identifier)).first()
+        if not user or not bcrypt.check_password_hash(user.password_hash, password):
+            return jsonify({"error": "invalid credentials"}), 401
+    except Exception as exc:
+        app.logger.warning("Login failed because database is not ready: %s", exc)
+        return jsonify({"error": "database not ready"}), 503
 
     access_token = create_access_token(identity=str(user.id))
     return jsonify(

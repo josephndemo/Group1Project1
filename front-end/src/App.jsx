@@ -9,7 +9,7 @@ import Favorites from './features/books/Favorites.jsx';
 import { Search } from 'lucide-react';
 import BookCard from './features/books/BookCard.jsx';
 import BookClub from './features/bookClub/BookClub.jsx';
-import { booksApi } from './api/client.js';
+import { booksApi, systemApi } from './api/client.js';
 
 const defaultCover = 'https://images.unsplash.com/photo-1543002588-bfa74002ed7e?auto=format&fit=crop&q=80&w=400';
 
@@ -71,6 +71,7 @@ export default function App() {
     return savedUser ? JSON.parse(savedUser) : null;
   });
   const [authNotice, setAuthNotice] = useState('');
+  const [backendStatus, setBackendStatus] = useState({ state: 'checking', message: 'Checking backend status...' });
   const [customBook, setCustomBook] = useState({ title: '', author: '', notes: '', first_published: '', publisher: '', cover_url: '' });
   const [customBookError, setCustomBookError] = useState('');
   const [editingBook, setEditingBook] = useState(null);
@@ -110,6 +111,34 @@ export default function App() {
 
     loadUserBooks();
   }, [user]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const checkBackendHealth = async () => {
+      try {
+        const result = await systemApi.health();
+        if (!isMounted) return;
+
+        if (result?.status === 'ok') {
+          setBackendStatus({ state: 'online', message: 'Backend is running.' });
+        } else {
+          setBackendStatus({ state: 'offline', message: 'Backend status is unknown.' });
+        }
+      } catch {
+        if (!isMounted) return;
+        setBackendStatus({ state: 'offline', message: 'Backend is not reachable.' });
+      }
+    };
+
+    checkBackendHealth();
+    const intervalId = setInterval(checkBackendHealth, 30000);
+
+    return () => {
+      isMounted = false;
+      clearInterval(intervalId);
+    };
+  }, []);
 
   const handleViewChange = (nextView) => {
     if (nextView === 'manageBooks' && user?.role !== 'admin') {
@@ -355,6 +384,7 @@ export default function App() {
     return (
       <div className="app-container">
         <main className="auth-main">
+          <div className={`status-message backend-status ${backendStatus.state}`}>{backendStatus.message}</div>
           <AuthPanel onAuthSuccess={handleAuthSuccess} />
         </main>
       </div>
@@ -372,6 +402,7 @@ export default function App() {
 
       <main>
         {authNotice && <div className="status-message">{authNotice}</div>}
+        <div className={`status-message backend-status ${backendStatus.state}`}>{backendStatus.message}</div>
 
         {view === 'home' && (
           <>

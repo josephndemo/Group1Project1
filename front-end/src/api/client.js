@@ -68,3 +68,7 @@ export const reviewsApi = {
 export const bookClubApi = {
  recommendations: () => request('/book-club/recommendations'),
 };
+
+export const systemApi = {
+ health: () => request('/health'),
+};

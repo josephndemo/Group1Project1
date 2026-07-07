@@ -136,23 +136,26 @@ def reviews_for_book(book_id):
 
 @reviews_bp.route("/book-club/recommendations", methods=["GET"])
 def book_club_recommendations():
- rows = (
-  db.session.query(
-   Book.id.label("book_id"),
-   Book.title,
-   Book.author,
-   Book.cover_url,
-   Book.external_id,
-   func.avg(Review.rating).label("average_rating"),
-   func.count(Review.id).label("review_count"),
-  )
-  .join(Review, Review.book_id == Book.id)
-  .filter(Review.is_public.is_(True))
-  .group_by(Book.id, Book.title, Book.author, Book.cover_url, Book.external_id)
-  .order_by(func.avg(Review.rating).desc(), func.count(Review.id).desc())
-  .limit(20)
-  .all()
- )
+ try:
+   rows = (
+    db.session.query(
+      Book.id.label("book_id"),
+      Book.title,
+      Book.author,
+      Book.cover_url,
+      Book.external_id,
+      func.avg(Review.rating).label("average_rating"),
+      func.count(Review.id).label("review_count"),
+    )
+    .join(Review, Review.book_id == Book.id)
+    .filter(Review.is_public.is_(True))
+    .group_by(Book.id, Book.title, Book.author, Book.cover_url, Book.external_id)
+    .order_by(func.avg(Review.rating).desc(), func.count(Review.id).desc())
+    .limit(20)
+    .all()
+   )
+ except Exception:
+   return jsonify([])
 
  return jsonify([
   {
