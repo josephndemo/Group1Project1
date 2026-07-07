@@ -112,8 +112,60 @@ def _repair_legacy_schema():
             app.logger.warning("Legacy schema repair skipped: %s", exc)
 
 
+def _ensure_catalog_seeded():
+    if os.getenv("AUTO_SEED_CATALOG", "true").lower() != "true":
+        return
+
+    with app.app_context():
+        try:
+            catalog_count = Book.query.filter_by(shelf_id=None).count()
+            if catalog_count > 0:
+                return
+
+            # Lazy import avoids startup circular imports while reusing canonical seed data.
+            from seed import BOOKS_TO_SEED
+
+            admin = User.query.filter_by(username="admin").first()
+            if not admin:
+                admin = User(
+                    username=os.getenv("DEFAULT_ADMIN_USERNAME", "admin"),
+                    email=os.getenv("DEFAULT_ADMIN_EMAIL", "admin@example.com"),
+                    password_hash=bcrypt.generate_password_hash(
+                        os.getenv("DEFAULT_ADMIN_PASSWORD", "admin123")
+                    ).decode("utf-8"),
+                    role="admin",
+                )
+                db.session.add(admin)
+                db.session.flush()
+
+            inserted = 0
+            for entry in BOOKS_TO_SEED:
+                db.session.add(
+                    Book(
+                        title=entry["title"],
+                        author=entry["author"],
+                        notes=entry.get("notes"),
+                        status=entry.get("status", "want_to_read"),
+                        first_published=entry.get("first_published"),
+                        publisher=entry.get("publisher"),
+                        cover_url=entry.get("cover_url"),
+                        external_id=entry.get("external_id"),
+                        user_id=admin.id,
+                        shelf_id=None,
+                    )
+                )
+                inserted += 1
+
+            db.session.commit()
+            app.logger.info("Auto-seeded %s catalog books.", inserted)
+        except Exception as exc:
+            db.session.rollback()
+            app.logger.warning("Catalog auto-seed skipped: %s", exc)
+
+
 _initialize_database()
 _repair_legacy_schema()
+_ensure_catalog_seeded()
 
 
 def _auth_user_or_401():
