@@ -1,11 +1,19 @@
 import os
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
+
+from sqlalchemy.engine.url import make_url
 from dotenv import load_dotenv
 
 load_dotenv()
 
 
 def _normalize_database_url(url):
+    if not url:
+        return url
+
+    # Render env values are occasionally pasted with wrapping quotes or whitespace.
+    url = url.strip().strip('"').strip("'")
+
     if url and url.startswith("postgres://"):
         url = url.replace("postgres://", "postgresql://", 1)
 
@@ -21,17 +29,26 @@ def _normalize_database_url(url):
 
 
 def _database_url():
-    url = (
-        os.getenv("DATABASE_URL")
-        or os.getenv("POSTGRES_URL")
-        or os.getenv("POSTGRESQL_URL")
-        or os.getenv("RENDER_DATABASE_URL")
+    candidates = [
+        os.getenv("DATABASE_URL"),
+        os.getenv("POSTGRES_URL"),
+        os.getenv("POSTGRESQL_URL"),
+        os.getenv("RENDER_DATABASE_URL"),
+    ]
+
+    for candidate in candidates:
+        normalized = _normalize_database_url(candidate)
+        if not normalized:
+            continue
+        try:
+            make_url(normalized)
+            return normalized
+        except Exception:
+            continue
+
+    raise RuntimeError(
+        "No valid SQLAlchemy database URL found. Set DATABASE_URL (or POSTGRES_URL/POSTGRESQL_URL/RENDER_DATABASE_URL)."
     )
-    if not url:
-        raise RuntimeError(
-            "DATABASE_URL or POSTGRES_URL is required; SQLite is not supported."
-        )
-    return _normalize_database_url(url)
 
 
 class Config:
