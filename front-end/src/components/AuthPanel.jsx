@@ -1,8 +1,26 @@
 import { useEffect, useState } from 'react';
 import { authApi, bookClubApi } from '../api/client.js';
 import brandLogo from '../assets/icon1.png';
+import { mockBookClubBooks } from '../features/bookClub/data/mockBookClubData.js';
 
 const defaultCover = 'https://images.unsplash.com/photo-1543002588-bfa74002ed7e?auto=format&fit=crop&q=80&w=400';
+
+const fallbackHighlights = [...mockBookClubBooks]
+    .sort((a, b) => {
+        if ((b.averageRating || 0) !== (a.averageRating || 0)) {
+            return (b.averageRating || 0) - (a.averageRating || 0);
+        }
+
+        return (b.reviewCount || 0) - (a.reviewCount || 0);
+    })
+    .slice(0, 3)
+    .map((book) => ({
+        title: book.title,
+        author: book.author,
+        cover_url: book.coverUrl,
+        average_rating: book.averageRating || 0,
+        review_count: book.reviewCount || 0,
+    }));
 
 export default function AuthPanel({ onAuthSuccess }) {
     const [mode, setMode] = useState('login');
@@ -21,11 +39,12 @@ export default function AuthPanel({ onAuthSuccess }) {
                 setHighlightsLoading(true);
                 const data = await bookClubApi.recommendations();
                 if (!cancelled) {
-                    setClubHighlights((data || []).slice(0, 3));
+                    const highlights = (data || []).slice(0, 3);
+                    setClubHighlights(highlights.length > 0 ? highlights : fallbackHighlights);
                 }
             } catch {
                 if (!cancelled) {
-                    setClubHighlights([]);
+                    setClubHighlights(fallbackHighlights);
                 }
             } finally {
                 if (!cancelled) {
