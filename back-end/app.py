@@ -5,6 +5,7 @@ from flask_bcrypt import Bcrypt
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
 from flask_cors import CORS
 from flask_migrate import Migrate, upgrade
+from sqlalchemy import inspect, text
 from models import db, User, Shelf, Book
 from schemas import book_schema, book_schema_many, shelf_schema, shelf_schema_many
 from reviews_routes import reviews_bp
@@ -55,7 +56,22 @@ def _initialize_database():
             upgrade()
         except Exception as exc:
             app.logger.warning("Database upgrade failed, creating tables directly: %s", exc)
-            db.create_all()
+
+        # Ensure required tables exist even when migrations are partially applied.
+        db.create_all()
+
+        # Guard against older DBs that don't yet have the role column.
+        try:
+            inspector = inspect(db.engine)
+            user_columns = {column["name"] for column in inspector.get_columns("users")}
+            if "role" not in user_columns:
+                db.session.execute(
+                    text("ALTER TABLE users ADD COLUMN role VARCHAR(20) NOT NULL DEFAULT 'user'")
+                )
+                db.session.commit()
+        except Exception as exc:
+            db.session.rollback()
+            app.logger.warning("Could not verify/repair users.role column: %s", exc)
 
 
 _initialize_database()
