@@ -11,6 +11,7 @@ class User(UserMixin, db.Model):
     username = db.Column(db.String(80), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(255), nullable=False)
+    role = db.Column(db.String(20), nullable=False, default="user")
 
     shelves = db.relationship(
         "Shelf",
@@ -29,7 +30,7 @@ class User(UserMixin, db.Model):
     )
 
     def __repr__(self):
-        return f"<User {self.username}>"
+        return f"<User {self.username} ({self.role})>"
 
 
 class Shelf(db.Model):

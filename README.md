@@ -175,7 +175,7 @@ back-end/
 ├── Pipfile               # pipenv dependency definition
 ├── Pipfile.lock          # locked pipenv dependency versions
 ├── .env.example          # environment variable template
-└── instance/             # local instance data (e.g., sqlite db)
+└── instance/             # local Flask instance/runtime data
 ```
 
 ### Backend Layers
@@ -195,6 +195,7 @@ Before running the project, ensure you have:
 * pipenv
 * Node.js 20.19+ or 22.12+
 * npm (included with Node.js)
+* PostgreSQL
 
 ---
 
@@ -213,6 +214,7 @@ cd back-end
 pip install pipenv
 pipenv install
 cp .env.example .env
+createdb library_db
 pipenv run python app.py
 ```
 

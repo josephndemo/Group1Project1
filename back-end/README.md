@@ -8,6 +8,7 @@ This project now has a React frontend and a Flask backend that work together for
 - Node.js 20.19+ or 22.12+
 - npm
 - pipenv
+- PostgreSQL
 
 ## Backend setup
 
@@ -27,9 +28,34 @@ This project now has a React frontend and a Flask backend that work together for
    ```bash
    cp .env.example .env
    ```
-5. Start the Flask server:
+5. Make sure PostgreSQL is running and create the database:
+   ```bash
+   createdb library_db
+   ```
+6. Start the Flask server:
    ```bash
    pipenv run python app.py
+   ```
+
+## Database migrations (Flask-Migrate)
+
+Run these commands from the backend folder:
+
+1. Initialize migrations (only once):
+   ```bash
+   pipenv run flask db init
+   ```
+2. Create a migration after model changes:
+   ```bash
+   pipenv run flask db migrate -m "describe schema change"
+   ```
+3. Apply migrations:
+   ```bash
+   pipenv run flask db upgrade
+   ```
+4. Roll back one revision (optional):
+   ```bash
+   pipenv run flask db downgrade
    ```
 
 The backend runs at:
@@ -58,6 +84,19 @@ http://127.0.0.1:5173
 ```
 
 ## API overview
+
+## Auth and roles
+
+- `POST /auth/register` creates a regular user account (`role=user`).
+- `POST /auth/login` returns JWT and user profile (`id`, `username`, `email`, `role`).
+- `GET /auth/me` returns the authenticated user profile.
+- Admin users can add, edit, and delete catalog books.
+- Regular users can create/manage their own shelves and add catalog books to their shelves using `POST /shelves/<id>/books`.
+- Regular users can participate in book club discussions via reviews/comments.
+
+Default seed accounts:
+- Admin: `admin@example.com` / `admin123`
+- User: `demo@example.com` / `demo123`
 
 ### Auth
 - `POST /auth/register`

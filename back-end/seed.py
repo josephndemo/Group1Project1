@@ -1,4 +1,5 @@
 from flask_bcrypt import Bcrypt
+from sqlalchemy import text
 from app import app
 from models import db, User, Shelf, Book
 
@@ -277,20 +278,68 @@ BOOKS_TO_SEED = [
 ]
 
 
+USERS_TO_SEED = [
+    {"username": "josephndemo", "email": "joseph.ndemo@example.com", "password": "password123"},
+    {"username": "markwarunge", "email": "mark.warunge@example.com", "password": "password123"},
+    {"username": "gregorykipchumba", "email": "gregory.kipchumba@example.com", "password": "password123"},
+    {"username": "abdirahmanabdisalah", "email": "abdirahman.abdisalah@example.com", "password": "password123"},
+    {"username": "robertmaina", "email": "robert.maina@example.com", "password": "password123"},
+    {"username": "rotichian", "email": "rotich.ian@example.com", "password": "password123"},
+]
+
+
 def seed_books():
     with app.app_context():
         db.create_all()
 
-        user = User.query.get(1)
+        for table_name in ["users", "shelves", "books", "reviews"]:
+            db.session.execute(
+                text(
+                    f"SELECT setval(pg_get_serial_sequence('{table_name}', 'id'), "
+                    f"COALESCE((SELECT MAX(id) FROM {table_name}), 1), "
+                    f"(SELECT COUNT(*) > 0 FROM {table_name}))"
+                )
+            )
+        db.session.commit()
+
+        admin = User.query.filter_by(username="admin").first()
+        if not admin:
+            admin = User(
+                username="admin",
+                email="admin@example.com",
+                password_hash=Bcrypt().generate_password_hash("admin123").decode("utf-8"),
+                role="admin",
+            )
+            db.session.add(admin)
+            db.session.flush()
+
+        user = User.query.filter_by(username="demo").first()
         if not user:
             user = User(
-                id=1,
                 username="demo",
                 email="demo@example.com",
                 password_hash=Bcrypt().generate_password_hash("demo123").decode("utf-8"),
+                role="user",
             )
             db.session.add(user)
             db.session.flush()
+
+        for entry in USERS_TO_SEED:
+            existing_user = User.query.filter(
+                (User.username == entry["username"]) | (User.email == entry["email"])
+            ).first()
+            if existing_user:
+                continue
+
+            seeded_user = User(
+                username=entry["username"],
+                email=entry["email"],
+                password_hash=Bcrypt().generate_password_hash(entry["password"]).decode("utf-8"),
+                role="user",
+            )
+            db.session.add(seeded_user)
+
+        db.session.flush()
 
         shelf = Shelf.query.filter_by(user_id=user.id).first()
         if not shelf:
@@ -298,7 +347,7 @@ def seed_books():
             db.session.add(shelf)
             db.session.flush()
 
-        existing_titles = {book.title.lower() for book in Book.query.filter_by(user_id=user.id).all()}
+        existing_titles = {book.title.lower() for book in Book.query.filter_by(user_id=admin.id, shelf_id=None).all()}
 
         for entry in BOOKS_TO_SEED:
             if entry["title"].lower() in existing_titles:
@@ -312,13 +361,13 @@ def seed_books():
                 first_published=entry["first_published"],
                 publisher=entry["publisher"],
                 cover_url=entry["cover_url"],
-                user_id=user.id,
-                shelf_id=shelf.id,
+                user_id=admin.id,
+                shelf_id=None,
             )
             db.session.add(book)
 
         db.session.commit()
-        print(f"Seeded {len(BOOKS_TO_SEED)} books for demo user.")
+        print("Seeded catalog books and default users: admin/admin123, demo/demo123")
 
 
 if __name__ == "__main__":

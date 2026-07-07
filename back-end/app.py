@@ -1,10 +1,8 @@
-import os
 from flask import Flask, jsonify, request
 from flask_bcrypt import Bcrypt
-from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
 from flask_cors import CORS
-from sqlalchemy import inspect
+from flask_migrate import Migrate
 from models import db, User, Shelf, Book
 from schemas import book_schema, book_schema_many, shelf_schema, shelf_schema_many
 from reviews_routes import reviews_bp
@@ -15,33 +13,28 @@ app.config.from_object(Config)
 
 CORS(app, resources={r"/*": {"origins": "*"}})
 db.init_app(app)
-Bcrypt(app)
-login_manager = LoginManager(app)
+migrate = Migrate(app, db)
+bcrypt = Bcrypt(app)
 jwt = JWTManager(app)
 app.register_blueprint(reviews_bp)
 
-with app.app_context():
-    db.create_all()
-    inspector = inspect(db.engine)
-    if 'books' in inspector.get_table_names():
-        columns = {col['name'] for col in inspector.get_columns('books')}
-        for column_name in ['first_published', 'publisher', 'cover_url', 'external_id']:
-            if column_name not in columns:
-                try:
-                    db.session.execute(db.text(f'ALTER TABLE books ADD COLUMN {column_name} VARCHAR(255)'))
-                except Exception:
-                    pass
-        if 'comment' not in columns:
-            try:
-                db.session.execute(db.text('ALTER TABLE books ADD COLUMN comment TEXT'))
-            except Exception:
-                pass
-        db.session.commit()
+
+def _auth_user_or_401():
+    identity = get_jwt_identity()
+    if identity is None:
+        return None, (jsonify({"error": "authentication required"}), 401)
+
+    user = User.query.get(int(identity))
+    if not user:
+        return None, (jsonify({"error": "user not found"}), 404)
+
+    return user, None
 
 
-@login_manager.user_loader
-def load_user(user_id):
-    return User.query.get(int(user_id))
+def _admin_required_or_403(user):
+    if user.role != "admin":
+        return jsonify({"error": "admin access required"}), 403
+    return None
 
 
 @app.route("/health", methods=["GET"])
@@ -62,8 +55,8 @@ def register():
     if User.query.filter((User.username == username) | (User.email == email)).first():
         return jsonify({"error": "user already exists"}), 409
 
-    hashed = Bcrypt().generate_password_hash(password).decode("utf-8")
-    user = User(username=username, email=email, password_hash=hashed)
+    hashed = bcrypt.generate_password_hash(password).decode("utf-8")
+    user = User(username=username, email=email, password_hash=hashed, role="user")
     db.session.add(user)
     db.session.commit()
 
@@ -80,19 +73,41 @@ def login():
         return jsonify({"error": "identifier and password are required"}), 400
 
     user = User.query.filter((User.username == identifier) | (User.email == identifier)).first()
-    if not user or not Bcrypt().check_password_hash(user.password_hash, password):
+    if not user or not bcrypt.check_password_hash(user.password_hash, password):
         return jsonify({"error": "invalid credentials"}), 401
 
     access_token = create_access_token(identity=str(user.id))
-    return jsonify({"access_token": access_token, "user": {"id": user.id, "username": user.username, "email": user.email}})
+    return jsonify(
+        {
+            "access_token": access_token,
+            "user": {
+                "id": user.id,
+                "username": user.username,
+                "email": user.email,
+                "role": user.role,
+            },
+        }
+    )
+
+
+@app.route("/auth/me", methods=["GET"])
+@jwt_required()
+def me():
+    user, error_response = _auth_user_or_401()
+    if error_response:
+        return error_response
+
+    return jsonify({"id": user.id, "username": user.username, "email": user.email, "role": user.role})
 
 
 @app.route("/shelves", methods=["GET", "POST"])
-@jwt_required(optional=True)
+@jwt_required()
 def shelves():
-    # Login is disabled for now, so unauthenticated requests fall back to the demo user.
-    identity = get_jwt_identity()
-    user_id = int(identity) if identity is not None else 1
+    user, error_response = _auth_user_or_401()
+    if error_response:
+        return error_response
+
+    user_id = user.id
 
     if request.method == "GET":
         shelves = Shelf.query.filter_by(user_id=user_id).all()
@@ -111,8 +126,11 @@ def shelves():
 @app.route("/shelves/<int:shelf_id>", methods=["GET", "PUT", "DELETE"])
 @jwt_required()
 def shelf_detail(shelf_id):
-    user_id = int(get_jwt_identity())
-    shelf = Shelf.query.filter_by(id=shelf_id, user_id=user_id).first_or_404(description="Shelf not found")
+    user, error_response = _auth_user_or_401()
+    if error_response:
+        return error_response
+
+    shelf = Shelf.query.filter_by(id=shelf_id, user_id=user.id).first_or_404(description="Shelf not found")
 
     if request.method == "GET":
         return jsonify(shelf_schema.dump(shelf))
@@ -131,16 +149,61 @@ def shelf_detail(shelf_id):
     return jsonify({"message": "shelf deleted"})
 
 
+@app.route("/shelves/<int:shelf_id>/books", methods=["POST"])
+@jwt_required()
+def add_book_to_shelf(shelf_id):
+    user, error_response = _auth_user_or_401()
+    if error_response:
+        return error_response
+
+    if user.role == "admin":
+        return jsonify({"error": "Admins should manage catalog books via /books"}), 400
+
+    shelf = Shelf.query.filter_by(id=shelf_id, user_id=user.id).first_or_404(description="Shelf not found")
+    payload = request.get_json(silent=True) or {}
+    source_book_id = payload.get("book_id")
+    if not source_book_id:
+        return jsonify({"error": "book_id is required"}), 400
+
+    source_book = Book.query.filter_by(id=source_book_id, shelf_id=None).first()
+    if not source_book:
+        return jsonify({"error": "Catalog book not found"}), 404
+
+    user_book = Book(
+        title=source_book.title,
+        author=source_book.author,
+        notes=payload.get("notes"),
+        comment=payload.get("comment"),
+        status=payload.get("status", "want_to_read"),
+        first_published=source_book.first_published,
+        publisher=source_book.publisher,
+        cover_url=source_book.cover_url,
+        external_id=source_book.external_id or str(source_book.id),
+        shelf_id=shelf.id,
+        user_id=user.id,
+    )
+    db.session.add(user_book)
+    db.session.commit()
+    return jsonify(book_schema.dump(user_book)), 201
+
+
 @app.route("/books", methods=["GET", "POST"])
-@jwt_required(optional=True)
+@jwt_required()
 def books():
-    # Login is disabled for now, so unauthenticated requests fall back to the demo user.
-    identity = get_jwt_identity()
-    user_id = int(identity) if identity is not None else 1
+    user, error_response = _auth_user_or_401()
+    if error_response:
+        return error_response
 
     if request.method == "GET":
-        books = Book.query.filter_by(user_id=user_id).all()
+        if user.role == "admin":
+            books = Book.query.filter_by(shelf_id=None).order_by(Book.created_at.desc()).all()
+        else:
+            books = Book.query.filter_by(shelf_id=None).order_by(Book.created_at.desc()).all()
         return jsonify(book_schema_many.dump(books))
+
+    admin_error = _admin_required_or_403(user)
+    if admin_error:
+        return admin_error
 
     payload = request.get_json(silent=True) or {}
     if not payload.get("title") or not payload.get("author"):
@@ -156,8 +219,8 @@ def books():
         publisher=payload.get("publisher"),
         cover_url=payload.get("cover_url"),
         external_id=payload.get("external_id"),
-        shelf_id=payload.get("shelf_id"),
-        user_id=user_id,
+        shelf_id=None,
+        user_id=user.id,
     )
     db.session.add(book)
     db.session.commit()
@@ -165,19 +228,28 @@ def books():
 
 
 @app.route("/books/<int:book_id>", methods=["GET", "PUT", "DELETE"])
-@jwt_required(optional=True)
+@jwt_required()
 def book_detail(book_id):
-    # Login is disabled for now, so unauthenticated requests fall back to the demo user.
-    identity = get_jwt_identity()
-    user_id = int(identity) if identity is not None else 1
-    book = Book.query.filter_by(id=book_id, user_id=user_id).first_or_404(description="Book not found")
+    user, error_response = _auth_user_or_401()
+    if error_response:
+        return error_response
 
     if request.method == "GET":
+        if user.role == "admin":
+            book = Book.query.filter_by(id=book_id).first_or_404(description="Book not found")
+        else:
+            book = Book.query.filter_by(id=book_id, shelf_id=None).first_or_404(description="Book not found")
         return jsonify(book_schema.dump(book))
+
+    admin_error = _admin_required_or_403(user)
+    if admin_error:
+        return admin_error
+
+    book = Book.query.filter_by(id=book_id, shelf_id=None).first_or_404(description="Catalog book not found")
 
     if request.method == "PUT":
         payload = request.get_json(silent=True) or {}
-        for field in ["title", "author", "notes", "comment", "status", "shelf_id", "first_published", "publisher", "external_id", "cover_url"]:
+        for field in ["title", "author", "notes", "comment", "status", "first_published", "publisher", "external_id", "cover_url"]:
             if field in payload:
                 setattr(book, field, payload[field])
         db.session.commit()

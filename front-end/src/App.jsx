@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { showError, showInfo, showSuccess } from './utils/swal.js';
 import Navbar from './components/Navbar.jsx';
 import Footer from './components/Footer.jsx';
+import AuthPanel from './components/AuthPanel.jsx';
 import BookModal from './features/books/BookModal.jsx';
 import Bookshelf from './features/books/Bookshelf.jsx';
 import Favorites from './features/books/Favorites.jsx';
@@ -50,10 +51,7 @@ const getBookKey = (book) => {
 };
 
 export default function App() {
-  // Navigation Architecture State Hooks
   const [view, setView] = useState('home');
-
-  // Persistent User Data Pools
   const [bookshelf, setBookshelf] = useState(() => {
     const saved = localStorage.getItem('lib_bookshelf');
     return saved ? JSON.parse(saved) : [];
@@ -63,7 +61,6 @@ export default function App() {
     return saved ? JSON.parse(saved) : [];
   });
 
-  // Base API Pipeline Core Hook State Variables
   const [books, setBooks] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedBook, setSelectedBook] = useState(null);
@@ -71,8 +68,7 @@ export default function App() {
   const [error, setError] = useState(null);
   const [user, setUser] = useState(() => {
     const savedUser = localStorage.getItem('library_user');
-    // Login is disabled for now, so the app uses a demo session to keep the library available.
-    return savedUser ? JSON.parse(savedUser) : { id: 1, username: 'demo' };
+    return savedUser ? JSON.parse(savedUser) : null;
   });
   const [authNotice, setAuthNotice] = useState('');
   const [customBook, setCustomBook] = useState({ title: '', author: '', notes: '', first_published: '', publisher: '', cover_url: '' });
@@ -80,7 +76,6 @@ export default function App() {
   const [editingBook, setEditingBook] = useState(null);
   const [editDraft, setEditDraft] = useState({ title: '', author: '', notes: '', first_published: '', publisher: '', cover_url: '' });
 
-  // Sync mutations to LocalStorage Layers automatically
   useEffect(() => {
     localStorage.setItem('lib_bookshelf', JSON.stringify(bookshelf));
   }, [bookshelf]);
@@ -106,7 +101,6 @@ export default function App() {
         setBooks(normalizedBooks);
         setBookshelf(normalizedBooks);
       } catch (err) {
-        console.error('Could not load books from backend', err);
         setError('Could not load your books from the backend.');
         showError('Unable to load books', err.message || 'Could not load your books from the backend.');
       } finally {
@@ -116,6 +110,14 @@ export default function App() {
 
     loadUserBooks();
   }, [user]);
+
+  const handleViewChange = (nextView) => {
+    if (nextView === 'manageBooks' && user?.role !== 'admin') {
+      setView('home');
+      return;
+    }
+    setView(nextView);
+  };
 
   const toggleBookshelf = (clickedBook) => {
     const normalizedBook = normalizeBook(clickedBook);
@@ -200,6 +202,11 @@ export default function App() {
     setBookshelf([]);
     setAuthNotice('Signed out.');
     showInfo('Signed out', 'You have been signed out of the library.');
+  };
+
+  const handleAuthSuccess = (authenticatedUser) => {
+    setUser(authenticatedUser);
+    setAuthNotice(`Welcome back, ${authenticatedUser.username}.`);
   };
 
   const handleAddCustomBook = async (event) => {
@@ -344,11 +351,22 @@ export default function App() {
     return [book.title, book.author, book.notes].some((value) => (value || '').toLowerCase().includes(query));
   });
 
+  if (!user) {
+    return (
+      <div className="app-container">
+        <main className="auth-main">
+          <AuthPanel onAuthSuccess={handleAuthSuccess} />
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div className="app-container">
       <Navbar
         currentView={view}
-        onViewChange={setView}
+        onViewChange={handleViewChange}
+        user={user}
         onLogout={handleLogout}
       />
 

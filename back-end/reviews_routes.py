@@ -11,7 +11,9 @@ reviews_bp = Blueprint("reviews", __name__)
 
 def _request_user_id():
  identity = get_jwt_identity()
- return int(identity) if identity is not None else 1
+ if identity is None:
+  return None
+ return int(identity)
 
 
 def _parse_rating(payload):
@@ -27,9 +29,11 @@ def _parse_rating(payload):
 
 
 @reviews_bp.route("/reviews", methods=["GET", "POST"])
-@jwt_required(optional=True)
+@jwt_required()
 def reviews_collection():
  user_id = _request_user_id()
+ if user_id is None:
+    return jsonify({"error": "authentication required"}), 401
 
  if request.method == "GET":
   reviews = (
@@ -45,9 +49,9 @@ def reviews_collection():
  if not book_id:
   return jsonify({"error": "book_id is required"}), 400
 
- book = Book.query.filter_by(id=book_id, user_id=user_id).first()
+ book = Book.query.filter_by(id=book_id).first()
  if not book:
-  return jsonify({"error": "Book not found for this user"}), 404
+  return jsonify({"error": "Book not found"}), 404
 
  rating, error_response = _parse_rating(payload)
  if error_response:
@@ -79,9 +83,11 @@ def reviews_collection():
 
 
 @reviews_bp.route("/reviews/<int:review_id>", methods=["GET", "PUT", "DELETE"])
-@jwt_required(optional=True)
+@jwt_required()
 def review_detail(review_id):
  user_id = _request_user_id()
+ if user_id is None:
+    return jsonify({"error": "authentication required"}), 401
  review = Review.query.filter_by(id=review_id, user_id=user_id).first_or_404(description="Review not found")
 
  if request.method == "GET":
@@ -111,9 +117,11 @@ def review_detail(review_id):
 
 
 @reviews_bp.route("/books/<int:book_id>/reviews", methods=["GET"])
-@jwt_required(optional=True)
+@jwt_required()
 def reviews_for_book(book_id):
  user_id = _request_user_id()
+ if user_id is None:
+    return jsonify({"error": "authentication required"}), 401
  reviews = (
   Review.query
   .filter(
