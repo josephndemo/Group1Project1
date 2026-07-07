@@ -23,14 +23,15 @@ def _normalize_database_url(url):
     if url and url.startswith("postgres://"):
         url = url.replace("postgres://", "postgresql://", 1)
 
-    # Render/managed Postgres deployments often require SSL.
-    # Only append sslmode for hosted URLs that include a network location.
+    # Optionally append sslmode when explicitly configured via env.
+    # This avoids breaking Render internal database URLs that do not use SSL.
     if url and url.startswith("postgresql://"):
         parsed = urlsplit(url)
-        if parsed.netloc:
+        db_sslmode = os.getenv("DB_SSLMODE")
+        if parsed.netloc and db_sslmode:
             query = dict(parse_qsl(parsed.query, keep_blank_values=True))
             if "sslmode" not in query:
-                query["sslmode"] = os.getenv("DB_SSLMODE", "require")
+                query["sslmode"] = db_sslmode
                 url = urlunsplit((parsed.scheme, parsed.netloc, parsed.path, urlencode(query), parsed.fragment))
 
     return url
