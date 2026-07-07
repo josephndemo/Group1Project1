@@ -1,3 +1,5 @@
+import os
+
 from flask import Flask, jsonify, request
 from flask_bcrypt import Bcrypt
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
@@ -11,7 +13,21 @@ from config import Config
 app = Flask(__name__)
 app.config.from_object(Config)
 
-CORS(app, resources={r"/*": {"origins": "*"}})
+allowed_origins = [
+    origin.strip()
+    for origin in os.getenv(
+        "CORS_ORIGINS",
+        "https://openlibrary20.vercel.app,http://localhost:5173,http://127.0.0.1:5173",
+    ).split(",")
+    if origin.strip()
+]
+
+CORS(
+    app,
+    resources={r"/*": {"origins": allowed_origins}},
+    allow_headers=["Content-Type", "Authorization"],
+    methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+)
 db.init_app(app)
 migrate = Migrate(app, db)
 bcrypt = Bcrypt(app)
