@@ -136,7 +136,14 @@ def _admin_required_or_403(user):
 
 @app.route("/health", methods=["GET"])
 def health():
-    return jsonify({"status": "ok"})
+    try:
+        db.session.execute(text("SELECT 1"))
+        db_status = "ok"
+    except Exception as exc:
+        app.logger.warning("Health DB probe failed: %s", exc)
+        db_status = "error"
+
+    return jsonify({"status": "ok", "database": db_status})
 
 
 @app.route("/auth/register", methods=["POST"])
