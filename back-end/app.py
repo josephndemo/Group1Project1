@@ -80,7 +80,40 @@ def _initialize_database():
             app.logger.warning("Startup schema initialization skipped: %s", exc)
 
 
+def _repair_legacy_schema():
+    with app.app_context():
+        repairs = [
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS role VARCHAR(20) NOT NULL DEFAULT 'user'",
+            "ALTER TABLE books ADD COLUMN IF NOT EXISTS notes TEXT",
+            "ALTER TABLE books ADD COLUMN IF NOT EXISTS comment TEXT",
+            "ALTER TABLE books ADD COLUMN IF NOT EXISTS status VARCHAR(50) NOT NULL DEFAULT 'want_to_read'",
+            "ALTER TABLE books ADD COLUMN IF NOT EXISTS first_published VARCHAR(50)",
+            "ALTER TABLE books ADD COLUMN IF NOT EXISTS publisher VARCHAR(200)",
+            "ALTER TABLE books ADD COLUMN IF NOT EXISTS cover_url VARCHAR(500)",
+            "ALTER TABLE books ADD COLUMN IF NOT EXISTS external_id VARCHAR(200)",
+            "ALTER TABLE books ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT NOW()",
+            "ALTER TABLE books ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT NOW()",
+            "ALTER TABLE books ADD COLUMN IF NOT EXISTS user_id INTEGER NOT NULL DEFAULT 1",
+            "ALTER TABLE books ADD COLUMN IF NOT EXISTS shelf_id INTEGER",
+            "ALTER TABLE reviews ADD COLUMN IF NOT EXISTS rating INTEGER NOT NULL DEFAULT 5",
+            "ALTER TABLE reviews ADD COLUMN IF NOT EXISTS review_text TEXT",
+            "ALTER TABLE reviews ADD COLUMN IF NOT EXISTS is_public BOOLEAN NOT NULL DEFAULT TRUE",
+            "ALTER TABLE reviews ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT NOW()",
+            "ALTER TABLE reviews ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT NOW()",
+            "ALTER TABLE reviews ADD COLUMN IF NOT EXISTS user_id INTEGER NOT NULL DEFAULT 1",
+            "ALTER TABLE reviews ADD COLUMN IF NOT EXISTS book_id INTEGER NOT NULL DEFAULT 1",
+        ]
+
+        try:
+            with db.engine.begin() as connection:
+                for statement in repairs:
+                    connection.execute(text(statement))
+        except Exception as exc:
+            app.logger.warning("Legacy schema repair skipped: %s", exc)
+
+
 _initialize_database()
+_repair_legacy_schema()
 
 
 def _auth_user_or_401():
