@@ -4,7 +4,7 @@ from flask import Flask, jsonify, request
 from flask_bcrypt import Bcrypt
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
 from flask_cors import CORS
-from flask_migrate import Migrate
+from flask_migrate import Migrate, upgrade
 from models import db, User, Shelf, Book
 from schemas import book_schema, book_schema_many, shelf_schema, shelf_schema_many
 from reviews_routes import reviews_bp
@@ -22,6 +22,16 @@ allowed_origins = [
     if origin.strip()
 ]
 
+# Always allow known frontend origins even if CORS_ORIGINS is overridden in env.
+required_origins = [
+    "https://openlibrary20.vercel.app",
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+]
+for origin in required_origins:
+    if origin not in allowed_origins:
+        allowed_origins.append(origin)
+
 CORS(
     app,
     resources={r"/*": {"origins": allowed_origins}},
@@ -33,6 +43,22 @@ migrate = Migrate(app, db)
 bcrypt = Bcrypt(app)
 jwt = JWTManager(app)
 app.register_blueprint(reviews_bp)
+
+
+def _initialize_database():
+    # Keep Render-like deployments resilient when migrations were not run manually.
+    if os.getenv("AUTO_DB_UPGRADE", "true").lower() != "true":
+        return
+
+    with app.app_context():
+        try:
+            upgrade()
+        except Exception as exc:
+            app.logger.warning("Database upgrade failed, creating tables directly: %s", exc)
+            db.create_all()
+
+
+_initialize_database()
 
 
 def _auth_user_or_401():
