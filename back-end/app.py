@@ -17,8 +17,6 @@ app.config.from_object(Config)
 db_uri = app.config.get("SQLALCHEMY_DATABASE_URI", "")
 if db_uri.startswith("postgresql://"):
     app.logger.info("Database backend: postgresql")
-elif db_uri.startswith("sqlite://"):
-    app.logger.info("Database backend: sqlite")
 else:
     app.logger.info("Database backend: unknown")
 
