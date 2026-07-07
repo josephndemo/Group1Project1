@@ -14,6 +14,12 @@ def _normalize_database_url(url):
     # Render env values are occasionally pasted with wrapping quotes or whitespace.
     url = url.strip().strip('"').strip("'")
 
+    # Accept mistakenly pasted KEY=value forms in env variable values.
+    if "=" in url and not url.startswith(("postgres://", "postgresql://")):
+        key, value = url.split("=", 1)
+        if key.strip().upper() in {"DATABASE_URL", "POSTGRES_URL", "POSTGRESQL_URL", "RENDER_DATABASE_URL"}:
+            url = value.strip().strip('"').strip("'")
+
     if url and url.startswith("postgres://"):
         url = url.replace("postgres://", "postgresql://", 1)
 
