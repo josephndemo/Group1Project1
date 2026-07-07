@@ -1,7 +1,7 @@
 import { mockBookClubBooks } from '../data/mockBookClubData.js';
 import { rankBooks } from '../utils/ranking.js';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:5001';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://group1project1-1.onrender.com';
 const USE_MOCKS = import.meta.env.VITE_USE_MOCK_BOOK_CLUB !== 'false';
 const LOCAL_REVIEW_KEY = 'bookClub.mockReviews';
 
