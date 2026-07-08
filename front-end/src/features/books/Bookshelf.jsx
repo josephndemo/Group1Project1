@@ -1,6 +1,9 @@
 import BookCard from './BookCard.jsx';
 
-const getBookKey = (book) => book?.external_id || book?.backendId || book?.id || '';
+const getBookKey = (book) => {
+  const rawKey = book?.external_id || book?.backendId || book?.id;
+  return rawKey == null ? '' : String(rawKey);
+};
 
 export default function Bookshelf({ shelfBooks, onSelectBook, onToggleBookshelf, onToggleFavorite, favorites, onRateBook, onProgressChange }) {
   if (shelfBooks.length === 0) {

@@ -47,7 +47,8 @@ const normalizeBook = (book) => {
 
 const getBookKey = (book) => {
   const normalized = normalizeBook(book);
-  return normalized?.external_id || normalized?.backendId || normalized?.id || '';
+  const rawKey = normalized?.external_id || normalized?.backendId || normalized?.id;
+  return rawKey == null ? '' : String(rawKey);
 };
 
 export default function App() {
@@ -279,7 +280,7 @@ export default function App() {
 
   const handleAuthSuccess = (authenticatedUser) => {
     setUser(authenticatedUser);
-    setAuthNotice(`Welcome back, ${authenticatedUser.username}.`);
+    setAuthNotice('');
   };
 
   const handleAddCustomBook = async (event) => {
@@ -428,7 +429,6 @@ export default function App() {
     return (
       <div className="app-container">
         <main className="auth-main">
-          <div className={`status-message backend-status ${backendStatus.state}`}>{backendStatus.message}</div>
           <AuthPanel onAuthSuccess={handleAuthSuccess} />
         </main>
       </div>
@@ -446,7 +446,6 @@ export default function App() {
 
       <main>
         {authNotice && <div className="status-message">{authNotice}</div>}
-        <div className={`status-message backend-status ${backendStatus.state}`}>{backendStatus.message}</div>
 
         {view === 'home' && (
           <>
