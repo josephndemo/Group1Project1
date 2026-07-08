@@ -108,42 +108,6 @@ export default function BookClubPage({
   return (
     <section className="bc-page">
       <div className="bc-shell">
-        <header className="bc-hero">
-          <div className="bc-hero-content">
-            <p className="bc-kicker">Book Club Rankings</p>
-
-            <h1>Discover the books your club cannot stop talking about.</h1>
-
-            <p className="bc-hero-copy">
-              Explore ranked picks, reader reviews, recommendation scores, and
-              community discussion in one polished Book Club hub.
-            </p>
-
-            <div className="bc-hero-actions" aria-label="Book Club highlights">
-              <span>Goodreads-inspired rankings</span>
-              <span>Mock reviews today</span>
-              <span>Flask-ready tomorrow</span>
-            </div>
-          </div>
-
-          <dl className="bc-stats" aria-label="Book Club statistics">
-            <div className="bc-stat-card">
-              <dt>Ranked books</dt>
-              <dd>{books.length}</dd>
-            </div>
-
-            <div className="bc-stat-card">
-              <dt>Top score</dt>
-              <dd>{topScore}%</dd>
-            </div>
-
-            <div className="bc-stat-card">
-              <dt>Reader reviews</dt>
-              <dd>{totalReviews}</dd>
-            </div>
-          </dl>
-        </header>
-
         {notice && (
           <div role="status" aria-live="polite" className="bc-toast bc-toast-success">
             <span>{notice}</span>
