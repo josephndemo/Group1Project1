@@ -9,7 +9,7 @@ import Favorites from './features/books/Favorites.jsx';
 import { Search } from 'lucide-react';
 import BookCard from './features/books/BookCard.jsx';
 import BookClub from './features/bookClub/BookClub.jsx';
-import { booksApi, systemApi } from './api/client.js';
+import { booksApi, favoritesApi, shelvesApi, systemApi } from './api/client.js';
 
 const defaultCover = 'https://images.unsplash.com/photo-1543002588-bfa74002ed7e?auto=format&fit=crop&q=80&w=400';
 
@@ -52,14 +52,9 @@ const getBookKey = (book) => {
 
 export default function App() {
   const [view, setView] = useState('home');
-  const [bookshelf, setBookshelf] = useState(() => {
-    const saved = localStorage.getItem('lib_bookshelf');
-    return saved ? JSON.parse(saved) : [];
-  });
-  const [favorites, setFavorites] = useState(() => {
-    const saved = localStorage.getItem('lib_favorites');
-    return saved ? JSON.parse(saved) : [];
-  });
+  const [bookshelf, setBookshelf] = useState([]);
+  const [favorites, setFavorites] = useState([]);
+  const [currentShelfId, setCurrentShelfId] = useState(null);
 
   const [books, setBooks] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -78,18 +73,12 @@ export default function App() {
   const [editDraft, setEditDraft] = useState({ title: '', author: '', notes: '', first_published: '', publisher: '', cover_url: '' });
 
   useEffect(() => {
-    localStorage.setItem('lib_bookshelf', JSON.stringify(bookshelf));
-  }, [bookshelf]);
-
-  useEffect(() => {
-    localStorage.setItem('lib_favorites', JSON.stringify(favorites));
-  }, [favorites]);
-
-  useEffect(() => {
     const loadUserBooks = async () => {
       if (!user) {
         setBooks([]);
         setBookshelf([]);
+        setFavorites([]);
+        setCurrentShelfId(null);
         setLoading(false);
         return;
       }
@@ -97,10 +86,27 @@ export default function App() {
       try {
         setLoading(true);
         setError(null);
-        const savedBooks = await booksApi.list();
-        const normalizedBooks = savedBooks.map(normalizeBook);
-        setBooks(normalizedBooks);
-        setBookshelf(normalizedBooks);
+        const catalogBooks = await booksApi.list();
+        const normalizedCatalogBooks = catalogBooks.map(normalizeBook);
+        setBooks(normalizedCatalogBooks);
+
+        const userShelves = await shelvesApi.list();
+        let activeShelf = userShelves?.[0] || null;
+
+        if (!activeShelf) {
+          activeShelf = await shelvesApi.create({
+            name: `${user.username}'s Shelf`,
+            description: 'Personal reading shelf',
+          });
+        }
+
+        setCurrentShelfId(activeShelf.id);
+
+        const shelfBooks = await shelvesApi.listBooks(activeShelf.id);
+        setBookshelf((shelfBooks || []).map(normalizeBook));
+
+        const userFavorites = await favoritesApi.list();
+        setFavorites((userFavorites || []).map(normalizeBook));
       } catch (err) {
         setError('Could not load your books from the backend.');
         showError('Unable to load books', err.message || 'Could not load your books from the backend.');
@@ -148,33 +154,71 @@ export default function App() {
     setView(nextView);
   };
 
-  const toggleBookshelf = (clickedBook) => {
+  const toggleBookshelf = async (clickedBook) => {
+    if (!user || !currentShelfId) {
+      showInfo('Shelf unavailable', 'Please sign in again to load your shelf.');
+      return;
+    }
+
     const normalizedBook = normalizeBook(clickedBook);
     const key = getBookKey(normalizedBook);
+    const existing = bookshelf.find((book) => getBookKey(book) === key);
 
-    setBookshelf((prev) => {
-      const exists = prev.some((book) => getBookKey(book) === key);
-      if (exists) {
+    try {
+      if (existing?.backendId) {
+        await shelvesApi.removeBook(currentShelfId, existing.backendId);
+        setBookshelf((prev) => prev.filter((book) => getBookKey(book) !== key));
         showInfo('Removed from shelf', `${normalizedBook?.title || 'This book'} was removed from your shelf.`);
-        return prev.filter((book) => getBookKey(book) !== key);
+        return;
       }
 
+      if (!normalizedBook?.backendId) {
+        showError('Unable to add book', 'This catalog book is missing an ID.');
+        return;
+      }
+
+      const createdShelfBook = await shelvesApi.addBook(currentShelfId, {
+        book_id: normalizedBook.backendId,
+        status: 'want_to_read',
+      });
+
+      setBookshelf((prev) => [normalizeBook(createdShelfBook), ...prev]);
       showSuccess('Added to shelf', `${normalizedBook?.title || 'This book'} is now on your shelf.`);
-      return [...prev, normalizedBook];
-    });
+    } catch (err) {
+      showError('Shelf update failed', err.message || 'Could not update your shelf.');
+    }
   };
 
-  const toggleFavorite = (clickedBook) => {
-    setFavorites(prev => {
-      const exists = prev.some(f => f.id === clickedBook.id);
+  const toggleFavorite = async (clickedBook) => {
+    const normalizedBook = normalizeBook(clickedBook);
+    const key = getBookKey(normalizedBook);
+    if (!key) {
+      showError('Favorite update failed', 'This book is missing a stable ID.');
+      return;
+    }
+
+    const exists = favorites.some((favorite) => getBookKey(favorite) === key);
+
+    try {
       if (exists) {
-        showInfo('Removed from favorites', `${clickedBook?.title || 'This book'} was removed from your favorites.`);
-        return prev.filter(f => f.id !== clickedBook.id);
+        await favoritesApi.removeByExternalId(key);
+        setFavorites((prev) => prev.filter((favorite) => getBookKey(favorite) !== key));
+        showInfo('Removed from favorites', `${normalizedBook?.title || 'This book'} was removed from your favorites.`);
+        return;
       }
 
-      showSuccess('Added to favorites', `${clickedBook?.title || 'This book'} was added to your favorites.`);
-      return [...prev, clickedBook];
-    });
+      const createdFavorite = await favoritesApi.create({
+        external_id: key,
+        title: normalizedBook.title,
+        author: normalizedBook.author,
+        cover_url: normalizedBook.cover_url,
+      });
+
+      setFavorites((prev) => [normalizeBook(createdFavorite), ...prev]);
+      showSuccess('Added to favorites', `${normalizedBook?.title || 'This book'} was added to your favorites.`);
+    } catch (err) {
+      showError('Favorite update failed', err.message || 'Could not update your favorites.');
+    }
   };
 
   const handleRateBook = (bookId, newRating) => {
@@ -229,6 +273,8 @@ export default function App() {
     setUser(null);
     setBooks([]);
     setBookshelf([]);
+    setFavorites([]);
+    setCurrentShelfId(null);
     setAuthNotice('Signed out.');
     showInfo('Signed out', 'You have been signed out of the library.');
   };

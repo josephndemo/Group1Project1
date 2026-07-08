@@ -6,8 +6,15 @@ from flask_jwt_extended import JWTManager, create_access_token, jwt_required, ge
 from flask_cors import CORS
 from flask_migrate import Migrate, upgrade
 from sqlalchemy import inspect, text
-from models import db, User, Shelf, Book
-from schemas import book_schema, book_schema_many, shelf_schema, shelf_schema_many
+from models import db, User, Shelf, Book, Favorite
+from schemas import (
+    book_schema,
+    book_schema_many,
+    shelf_schema,
+    shelf_schema_many,
+    favorite_schema,
+    favorite_schema_many,
+)
 from reviews_routes import reviews_bp
 from config import Config
 
@@ -242,6 +249,8 @@ def _sync_default_users():
                     user.role = entry["role"]
                     user.password_hash = bcrypt.generate_password_hash(entry["password"]).decode("utf-8")
 
+                _ensure_user_shelf(user)
+
                 synced += 1
 
             db.session.commit()
@@ -249,12 +258,6 @@ def _sync_default_users():
         except Exception as exc:
             db.session.rollback()
             app.logger.warning("Default user sync skipped: %s", exc)
-
-
-_initialize_database()
-_repair_legacy_schema()
-_sync_default_users()
-_ensure_catalog_seeded()
 
 
 def _auth_user_or_401():
@@ -273,6 +276,27 @@ def _admin_required_or_403(user):
     if user.role != "admin":
         return jsonify({"error": "admin access required"}), 403
     return None
+
+
+def _ensure_user_shelf(user):
+    shelf = Shelf.query.filter_by(user_id=user.id).order_by(Shelf.id.asc()).first()
+    if shelf:
+        return shelf, False
+
+    shelf = Shelf(
+        name=f"{user.username}'s Shelf",
+        description="Personal reading shelf",
+        user_id=user.id,
+    )
+    db.session.add(shelf)
+    db.session.flush()
+    return shelf, True
+
+
+_initialize_database()
+_repair_legacy_schema()
+_sync_default_users()
+_ensure_catalog_seeded()
 
 
 @app.route("/health", methods=["GET"])
@@ -303,6 +327,8 @@ def register():
     hashed = bcrypt.generate_password_hash(password).decode("utf-8")
     user = User(username=username, email=email, password_hash=hashed, role="user")
     db.session.add(user)
+    db.session.flush()
+    _ensure_user_shelf(user)
     db.session.commit()
 
     return jsonify({"message": "user registered"}), 201
@@ -321,7 +347,12 @@ def login():
         user = User.query.filter((User.username == identifier) | (User.email == identifier)).first()
         if not user or not bcrypt.check_password_hash(user.password_hash, password):
             return jsonify({"error": "invalid credentials"}), 401
+
+        _, created = _ensure_user_shelf(user)
+        if created:
+            db.session.commit()
     except Exception as exc:
+        db.session.rollback()
         app.logger.warning("Login failed because database is not ready: %s", exc)
         return jsonify({"error": "database not ready"}), 503
 
@@ -349,6 +380,61 @@ def me():
     return jsonify({"id": user.id, "username": user.username, "email": user.email, "role": user.role})
 
 
+@app.route("/favorites", methods=["GET", "POST"])
+@jwt_required()
+def favorites():
+    user, error_response = _auth_user_or_401()
+    if error_response:
+        return error_response
+
+    if request.method == "GET":
+        favorites = Favorite.query.filter_by(user_id=user.id).order_by(Favorite.created_at.desc()).all()
+        return jsonify(favorite_schema_many.dump(favorites))
+
+    payload = request.get_json(silent=True) or {}
+    external_id = str(payload.get("external_id", "")).strip()
+    title = str(payload.get("title", "")).strip()
+    author = str(payload.get("author", "")).strip()
+    cover_url = payload.get("cover_url")
+
+    if not external_id or not title or not author:
+        return jsonify({"error": "external_id, title, and author are required"}), 400
+
+    existing = Favorite.query.filter_by(user_id=user.id, external_id=external_id).first()
+    if existing:
+        return jsonify(favorite_schema.dump(existing)), 200
+
+    favorite = Favorite(
+        external_id=external_id,
+        title=title,
+        author=author,
+        cover_url=cover_url,
+        user_id=user.id,
+    )
+    db.session.add(favorite)
+    db.session.commit()
+    return jsonify(favorite_schema.dump(favorite)), 201
+
+
+@app.route("/favorites/<path:external_id>", methods=["DELETE"])
+@jwt_required()
+def delete_favorite(external_id):
+    user, error_response = _auth_user_or_401()
+    if error_response:
+        return error_response
+
+    normalized_external_id = str(external_id).strip()
+    if not normalized_external_id:
+        return jsonify({"error": "external_id is required"}), 400
+
+    favorite = Favorite.query.filter_by(user_id=user.id, external_id=normalized_external_id).first_or_404(
+        description="Favorite not found"
+    )
+    db.session.delete(favorite)
+    db.session.commit()
+    return jsonify({"message": "favorite removed"})
+
+
 @app.route("/shelves", methods=["GET", "POST"])
 @jwt_required()
 def shelves():
@@ -359,6 +445,9 @@ def shelves():
     user_id = user.id
 
     if request.method == "GET":
+        _, created = _ensure_user_shelf(user)
+        if created:
+            db.session.commit()
         shelves = Shelf.query.filter_by(user_id=user_id).all()
         return jsonify(shelf_schema_many.dump(shelves))
 
@@ -405,9 +494,6 @@ def add_book_to_shelf(shelf_id):
     if error_response:
         return error_response
 
-    if user.role == "admin":
-        return jsonify({"error": "Admins should manage catalog books via /books"}), 400
-
     shelf = Shelf.query.filter_by(id=shelf_id, user_id=user.id).first_or_404(description="Shelf not found")
     payload = request.get_json(silent=True) or {}
     source_book_id = payload.get("book_id")
@@ -418,6 +504,15 @@ def add_book_to_shelf(shelf_id):
     if not source_book:
         return jsonify({"error": "Catalog book not found"}), 404
 
+    source_external_id = source_book.external_id or str(source_book.id)
+    existing = Book.query.filter_by(
+        user_id=user.id,
+        shelf_id=shelf.id,
+        external_id=source_external_id,
+    ).first()
+    if existing:
+        return jsonify(book_schema.dump(existing)), 200
+
     user_book = Book(
         title=source_book.title,
         author=source_book.author,
@@ -427,13 +522,42 @@ def add_book_to_shelf(shelf_id):
         first_published=source_book.first_published,
         publisher=source_book.publisher,
         cover_url=source_book.cover_url,
-        external_id=source_book.external_id or str(source_book.id),
+        external_id=source_external_id,
         shelf_id=shelf.id,
         user_id=user.id,
     )
     db.session.add(user_book)
     db.session.commit()
     return jsonify(book_schema.dump(user_book)), 201
+
+
+@app.route("/shelves/<int:shelf_id>/books", methods=["GET"])
+@jwt_required()
+def shelf_books(shelf_id):
+    user, error_response = _auth_user_or_401()
+    if error_response:
+        return error_response
+
+    Shelf.query.filter_by(id=shelf_id, user_id=user.id).first_or_404(description="Shelf not found")
+    books = Book.query.filter_by(user_id=user.id, shelf_id=shelf_id).order_by(Book.created_at.desc()).all()
+    return jsonify(book_schema_many.dump(books))
+
+
+@app.route("/shelves/<int:shelf_id>/books/<int:book_id>", methods=["DELETE"])
+@jwt_required()
+def remove_book_from_shelf(shelf_id, book_id):
+    user, error_response = _auth_user_or_401()
+    if error_response:
+        return error_response
+
+    Shelf.query.filter_by(id=shelf_id, user_id=user.id).first_or_404(description="Shelf not found")
+    book = Book.query.filter_by(id=book_id, user_id=user.id, shelf_id=shelf_id).first_or_404(
+        description="Shelf book not found"
+    )
+
+    db.session.delete(book)
+    db.session.commit()
+    return jsonify({"message": "book removed from shelf"})
 
 
 @app.route("/books", methods=["GET", "POST"])

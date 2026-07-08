@@ -28,6 +28,11 @@ class User(UserMixin, db.Model):
         back_populates="user",
         cascade="all, delete-orphan",
     )
+    favorites = db.relationship(
+        "Favorite",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
 
     def __repr__(self):
         return f"<User {self.username} ({self.role})>"
@@ -121,3 +126,29 @@ class Review(db.Model):
 
     def __repr__(self):
         return f"<Review book_id={self.book_id} rating={self.rating}>"
+
+
+class Favorite(db.Model):
+    __tablename__ = "favorites"
+
+    id = db.Column(db.Integer, primary_key=True)
+    external_id = db.Column(db.String(200), nullable=False)
+    title = db.Column(db.String(200), nullable=False)
+    author = db.Column(db.String(200), nullable=False)
+    cover_url = db.Column(db.String(500), nullable=True)
+    created_at = db.Column(db.DateTime, server_default=db.func.now())
+
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+
+    user = db.relationship("User", back_populates="favorites")
+
+    __table_args__ = (
+        db.UniqueConstraint(
+            "user_id",
+            "external_id",
+            name="one_favorite_per_user_per_book",
+        ),
+    )
+
+    def __repr__(self):
+        return f"<Favorite user_id={self.user_id} external_id={self.external_id}>"

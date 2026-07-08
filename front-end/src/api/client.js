@@ -54,6 +54,15 @@ export const booksApi = {
 export const shelvesApi = {
     list: () => request('/shelves'),
     create: (payload) => request('/shelves', { method: 'POST', body: JSON.stringify(payload) }),
+    listBooks: (shelfId) => request(`/shelves/${shelfId}/books`),
+    addBook: (shelfId, payload) => request(`/shelves/${shelfId}/books`, { method: 'POST', body: JSON.stringify(payload) }),
+    removeBook: (shelfId, bookId) => request(`/shelves/${shelfId}/books/${bookId}`, { method: 'DELETE' }),
+};
+
+export const favoritesApi = {
+    list: () => request('/favorites'),
+    create: (payload) => request('/favorites', { method: 'POST', body: JSON.stringify(payload) }),
+    removeByExternalId: (externalId) => request(`/favorites/${encodeURIComponent(externalId)}`, { method: 'DELETE' }),
 };
 
 

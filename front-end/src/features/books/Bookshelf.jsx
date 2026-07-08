@@ -1,5 +1,7 @@
 import BookCard from './BookCard.jsx';
 
+const getBookKey = (book) => book?.external_id || book?.backendId || book?.id || '';
+
 export default function Bookshelf({ shelfBooks, onSelectBook, onToggleBookshelf, onToggleFavorite, favorites, onRateBook, onProgressChange }) {
   if (shelfBooks.length === 0) {
     return (
@@ -16,13 +18,13 @@ export default function Bookshelf({ shelfBooks, onSelectBook, onToggleBookshelf,
       <div className="book-grid">
         {shelfBooks.map((book) => (
           <BookCard 
-            key={book.id}
+            key={getBookKey(book)}
             book={book}
             onSelect={onSelectBook}
             onToggleBookshelf={onToggleBookshelf}
             onToggleFavorite={onToggleFavorite}
             isBookshelf={true}
-            isFavorite={favorites.some(f => f.id === book.id)}
+            isFavorite={favorites.some((favorite) => getBookKey(favorite) === getBookKey(book))}
             showRating={true}
             showRemoveButton={true}
             onRateBook={onRateBook}

@@ -1,5 +1,7 @@
 import BookCard from './BookCard.jsx';
 
+const getBookKey = (book) => book?.external_id || book?.backendId || book?.id || '';
+
 export default function Favorites({ favoriteBooks, onSelectBook, onToggleBookshelf, onToggleFavorite, bookshelf }) {
   if (favoriteBooks.length === 0) {
     return (
@@ -16,14 +18,14 @@ export default function Favorites({ favoriteBooks, onSelectBook, onToggleBookshe
       <div className="book-grid">
         {favoriteBooks.map((book) => (
           <BookCard 
-            key={book.id}
+            key={getBookKey(book)}
             book={book}
             onSelect={onSelectBook}
             onToggleBookshelf={onToggleBookshelf}
             onToggleFavorite={onToggleFavorite}
-            isBookshelf={bookshelf.some(b => b.id === book.id)}
+            isBookshelf={bookshelf.some((shelfBook) => getBookKey(shelfBook) === getBookKey(book))}
             isFavorite={true}
-            showRating={bookshelf.some(b => b.id === book.id)}
+            showRating={bookshelf.some((shelfBook) => getBookKey(shelfBook) === getBookKey(book))}
             onRateBook={null} // Rates directly inside Bookshelf View contexts
           />
         ))}

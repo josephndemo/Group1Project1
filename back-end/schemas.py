@@ -40,6 +40,16 @@ class ReviewSchema(Schema):
     book = fields.Nested(BookSchema, dump_only=True)
 
 
+class FavoriteSchema(Schema):
+    id = fields.Int(dump_only=True)
+    external_id = fields.Str(required=True, validate=validate.Length(min=1, max=200))
+    title = fields.Str(required=True, validate=validate.Length(min=1, max=200))
+    author = fields.Str(required=True, validate=validate.Length(min=1, max=200))
+    cover_url = fields.Str(allow_none=True)
+    user_id = fields.Int(dump_only=True)
+    created_at = fields.DateTime(dump_only=True)
+
+
 book_schema = BookSchema()
 book_schema_many = BookSchema(many=True)
 
@@ -48,3 +58,6 @@ shelf_schema_many = ShelfSchema(many=True)
 
 review_schema = ReviewSchema()
 review_schema_many = ReviewSchema(many=True)
+
+favorite_schema = FavoriteSchema()
+favorite_schema_many = FavoriteSchema(many=True)
