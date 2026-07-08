@@ -120,6 +120,91 @@ https://group1project1.onrender.com
 
 ---
 
+## Authentication
+
+OpenLibrary Hub uses JWT-based authentication with `flask-jwt-extended`.
+
+### Auth Endpoints
+
+* `POST /auth/register` - create a new user account
+* `POST /auth/login` - authenticate and receive an `access_token`
+* `GET /auth/me` - get the authenticated user profile
+
+### Register (Signup)
+
+Request:
+
+```json
+{
+  "username": "newreader",
+  "email": "newreader@example.com",
+  "password": "welcome123"
+}
+```
+
+Response:
+
+```json
+{
+  "message": "user registered"
+}
+```
+
+### Login
+
+Request:
+
+```json
+{
+  "identifier": "newreader@example.com",
+  "password": "welcome123"
+}
+```
+
+Response:
+
+```json
+{
+  "access_token": "<jwt-token>",
+  "user": {
+    "id": 12,
+    "username": "newreader",
+    "email": "newreader@example.com",
+    "role": "user"
+  }
+}
+```
+
+### Using the Token
+
+Send the JWT in the `Authorization` header:
+
+```http
+Authorization: Bearer <jwt-token>
+```
+
+This is required for protected routes such as:
+
+* `GET /shelves`
+* `GET /favorites`
+* `GET /books`
+* `POST /reviews`
+
+### Default Demo Accounts
+
+If default-user sync is enabled in backend startup, these credentials are available:
+
+* `demo@example.com` / `demo123`
+* `admin@example.com` / `admin123`
+* `joseph.ndemo@example.com` / `password123`
+* `mark.warunge@example.com` / `password123`
+* `gregory.kipchumba@example.com` / `password123`
+* `abdirahman.abdisalah@example.com` / `password123`
+* `robert.maina@example.com` / `password123`
+* `rotich.ian@example.com` / `password123`
+
+---
+
 ## Technology Stack
 
 | Category      | Technology            |
