@@ -52,6 +52,58 @@ jwt = JWTManager(app)
 app.register_blueprint(reviews_bp)
 
 
+DEFAULT_USERS = [
+    {
+        "username": "demo",
+        "email": "demo@example.com",
+        "password": "demo123",
+        "role": "user",
+    },
+    {
+        "username": "admin",
+        "email": "admin@example.com",
+        "password": "admin123",
+        "role": "admin",
+    },
+    {
+        "username": "josephndemo",
+        "email": "joseph.ndemo@example.com",
+        "password": "password123",
+        "role": "user",
+    },
+    {
+        "username": "markwarunge",
+        "email": "mark.warunge@example.com",
+        "password": "password123",
+        "role": "user",
+    },
+    {
+        "username": "gregorykipchumba",
+        "email": "gregory.kipchumba@example.com",
+        "password": "password123",
+        "role": "user",
+    },
+    {
+        "username": "abdirahmanabdisalah",
+        "email": "abdirahman.abdisalah@example.com",
+        "password": "password123",
+        "role": "user",
+    },
+    {
+        "username": "robertmaina",
+        "email": "robert.maina@example.com",
+        "password": "password123",
+        "role": "user",
+    },
+    {
+        "username": "rotichian",
+        "email": "rotich.ian@example.com",
+        "password": "password123",
+        "role": "user",
+    },
+]
+
+
 def _initialize_database():
     # Keep Render-like deployments resilient when migrations were not run manually.
     if os.getenv("AUTO_DB_UPGRADE", "true").lower() != "true":
@@ -163,8 +215,45 @@ def _ensure_catalog_seeded():
             app.logger.warning("Catalog auto-seed skipped: %s", exc)
 
 
+def _sync_default_users():
+    if os.getenv("AUTO_SYNC_DEFAULT_USERS", "true").lower() != "true":
+        return
+
+    with app.app_context():
+        try:
+            synced = 0
+
+            for entry in DEFAULT_USERS:
+                user = User.query.filter(
+                    (User.username == entry["username"]) | (User.email == entry["email"])
+                ).first()
+
+                if not user:
+                    user = User(
+                        username=entry["username"],
+                        email=entry["email"],
+                        role=entry["role"],
+                        password_hash=bcrypt.generate_password_hash(entry["password"]).decode("utf-8"),
+                    )
+                    db.session.add(user)
+                else:
+                    user.username = entry["username"]
+                    user.email = entry["email"]
+                    user.role = entry["role"]
+                    user.password_hash = bcrypt.generate_password_hash(entry["password"]).decode("utf-8")
+
+                synced += 1
+
+            db.session.commit()
+            app.logger.info("Default user credentials synced for %s users.", synced)
+        except Exception as exc:
+            db.session.rollback()
+            app.logger.warning("Default user sync skipped: %s", exc)
+
+
 _initialize_database()
 _repair_legacy_schema()
+_sync_default_users()
 _ensure_catalog_seeded()
 
 
