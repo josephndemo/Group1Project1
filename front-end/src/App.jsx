@@ -229,12 +229,11 @@ export default function App() {
     const normalizedBook = bookshelf.find((entry) => getBookKey(entry) === bookId || entry.id === bookId);
     const backendId = normalizedBook?.backendId;
 
-    if (!backendId) return;
+    if (!backendId || !currentShelfId) return;
 
     try {
-      const updatedBook = await booksApi.update(backendId, { status });
+      const updatedBook = await shelvesApi.updateBook(currentShelfId, backendId, { status });
       const normalizedUpdatedBook = normalizeBook(updatedBook);
-      setBooks((prev) => prev.map((book) => (getBookKey(book) === bookId || book.backendId === backendId ? normalizedUpdatedBook : book)));
       setBookshelf((prev) => prev.map((book) => (getBookKey(book) === bookId || book.backendId === backendId ? normalizedUpdatedBook : book)));
       showSuccess('Progress updated', `Marked as ${status === 'completed' ? 'completed' : 'in progress'}.`);
     } catch (err) {
@@ -247,7 +246,7 @@ export default function App() {
     const normalizedBook = bookshelf.find((entry) => getBookKey(entry) === bookId || entry.id === bookId);
     const backendId = normalizedBook?.backendId;
 
-    if (!backendId) return;
+    if (!backendId || !currentShelfId) return;
 
     const trimmedComment = comment?.trim();
     if (!trimmedComment) return;
@@ -256,9 +255,8 @@ export default function App() {
     const nextComment = existingComment ? `${existingComment}\n\n${trimmedComment}` : trimmedComment;
 
     try {
-      const updatedBook = await booksApi.update(backendId, { comment: nextComment });
+      const updatedBook = await shelvesApi.updateBook(currentShelfId, backendId, { comment: nextComment });
       const normalizedUpdatedBook = normalizeBook(updatedBook);
-      setBooks((prev) => prev.map((book) => (getBookKey(book) === bookId || book.backendId === backendId ? normalizedUpdatedBook : book)));
       setBookshelf((prev) => prev.map((book) => (getBookKey(book) === bookId || book.backendId === backendId ? normalizedUpdatedBook : book)));
       showSuccess('Comment saved', 'Your comment was added to this book.');
     } catch (err) {

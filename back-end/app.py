@@ -543,7 +543,7 @@ def shelf_books(shelf_id):
     return jsonify(book_schema_many.dump(books))
 
 
-@app.route("/shelves/<int:shelf_id>/books/<int:book_id>", methods=["DELETE"])
+@app.route("/shelves/<int:shelf_id>/books/<int:book_id>", methods=["PUT", "DELETE"])
 @jwt_required()
 def remove_book_from_shelf(shelf_id, book_id):
     user, error_response = _auth_user_or_401()
@@ -554,6 +554,23 @@ def remove_book_from_shelf(shelf_id, book_id):
     book = Book.query.filter_by(id=book_id, user_id=user.id, shelf_id=shelf_id).first_or_404(
         description="Shelf book not found"
     )
+
+    if request.method == "PUT":
+        payload = request.get_json(silent=True) or {}
+
+        if "status" in payload:
+            status_value = str(payload.get("status") or "").strip().lower()
+            if status_value == "in_progress":
+                status_value = "want_to_read"
+            if status_value not in {"want_to_read", "completed"}:
+                return jsonify({"error": "status must be in progress or completed"}), 400
+            book.status = status_value
+
+        if "comment" in payload:
+            book.comment = payload.get("comment")
+
+        db.session.commit()
+        return jsonify(book_schema.dump(book))
 
     db.session.delete(book)
     db.session.commit()

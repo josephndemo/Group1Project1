@@ -129,6 +129,7 @@ export default function BookCard({
               type="button"
               className={`action-btn ${isBookshelf ? 'active-bookshelf' : ''}`}
               onClick={handleBookshelfAction}
+              disabled={isBookshelf}
             >
               <Bookmark size={15} />
               {isBookshelf ? 'Added' : 'Add to shelf'}

@@ -56,6 +56,7 @@ export const shelvesApi = {
     create: (payload) => request('/shelves', { method: 'POST', body: JSON.stringify(payload) }),
     listBooks: (shelfId) => request(`/shelves/${shelfId}/books`),
     addBook: (shelfId, payload) => request(`/shelves/${shelfId}/books`, { method: 'POST', body: JSON.stringify(payload) }),
+    updateBook: (shelfId, bookId, payload) => request(`/shelves/${shelfId}/books/${bookId}`, { method: 'PUT', body: JSON.stringify(payload) }),
     removeBook: (shelfId, bookId) => request(`/shelves/${shelfId}/books/${bookId}`, { method: 'DELETE' }),
 };
 
