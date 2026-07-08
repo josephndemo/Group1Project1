@@ -24,7 +24,7 @@ const fallbackHighlights = [...mockBookClubBooks]
 
 export default function AuthPanel({ onAuthSuccess }) {
     const [mode, setMode] = useState('login');
-    const [form, setForm] = useState({ username: '', email: '', password: '' });
+    const [form, setForm] = useState({ username: '', email: '', password: '', confirmPassword: '' });
     const [message, setMessage] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
@@ -77,8 +77,28 @@ export default function AuthPanel({ onAuthSuccess }) {
         setForm({ ...form, [e.target.name]: e.target.value });
     };
 
+    const handleModeSwitch = () => {
+        setMode((prevMode) => (prevMode === 'login' ? 'register' : 'login'));
+        setError('');
+        setMessage('');
+        setForm({ username: '', email: '', password: '', confirmPassword: '' });
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
+
+        if (mode === 'register') {
+            if (form.password.length < 6) {
+                setError('Password must be at least 6 characters.');
+                return;
+            }
+
+            if (form.password !== form.confirmPassword) {
+                setError('Passwords do not match.');
+                return;
+            }
+        }
+
         setLoading(true);
         setError('');
         setMessage('');
@@ -98,8 +118,15 @@ export default function AuthPanel({ onAuthSuccess }) {
                 onAuthSuccess?.(result.user);
                 setMessage('Signed in successfully');
             } else {
-                setMessage('Account created. Please sign in.');
-                setMode('login');
+                const loginResult = await authApi.login({
+                    identifier: form.email || form.username,
+                    password: form.password,
+                });
+
+                localStorage.setItem('library_token', loginResult.access_token);
+                localStorage.setItem('library_user', JSON.stringify(loginResult.user));
+                onAuthSuccess?.(loginResult.user);
+                setMessage('Account created successfully.');
             }
         } catch (err) {
             setError(err.message || 'Authentication failed');
@@ -179,19 +206,34 @@ export default function AuthPanel({ onAuthSuccess }) {
                                 <input id="username" name="username" value={form.username} onChange={handleChange} required />
 
                                 <label htmlFor="email">Email</label>
-                                <input id="email" type="email" name="email" value={form.email} onChange={handleChange} required />
+                                <input id="email" type="email" name="email" value={form.email} onChange={handleChange} autoComplete="email" required />
                             </>
                         )}
 
                         {mode === 'login' && (
                             <>
                                 <label htmlFor="identifier">Username or email</label>
-                                <input id="identifier" name="username" value={form.username} onChange={handleChange} required />
+                                <input id="identifier" name="username" value={form.username} onChange={handleChange} autoComplete="username" required />
                             </>
                         )}
 
                         <label htmlFor="password">Password</label>
-                        <input id="password" type="password" name="password" value={form.password} onChange={handleChange} required />
+                        <input id="password" type="password" name="password" value={form.password} onChange={handleChange} autoComplete={mode === 'login' ? 'current-password' : 'new-password'} required />
+
+                        {mode === 'register' && (
+                            <>
+                                <label htmlFor="confirmPassword">Confirm password</label>
+                                <input
+                                    id="confirmPassword"
+                                    type="password"
+                                    name="confirmPassword"
+                                    value={form.confirmPassword}
+                                    onChange={handleChange}
+                                    autoComplete="new-password"
+                                    required
+                                />
+                            </>
+                        )}
 
                         <button type="submit" disabled={loading} className="auth-submit-btn">
                             {loading ? 'Please wait...' : mode === 'login' ? 'Sign in' : 'Create account'}
@@ -200,7 +242,7 @@ export default function AuthPanel({ onAuthSuccess }) {
 
                     <p className="auth-mode-switch">
                         {mode === 'login' ? 'Need an account?' : 'Already have one?'}{' '}
-                        <button type="button" onClick={() => setMode(mode === 'login' ? 'register' : 'login')}>
+                        <button type="button" onClick={handleModeSwitch}>
                             {mode === 'login' ? 'Register' : 'Sign in'}
                         </button>
                     </p>
