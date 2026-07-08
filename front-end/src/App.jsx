@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { showError, showInfo, showSuccess } from './utils/swal.js';
 import Navbar from './components/Navbar.jsx';
+import ManageUsers from './components/ManageUsers.jsx';
 import Footer from './components/Footer.jsx';
 import AuthPanel from './components/AuthPanel.jsx';
 import BookModal from './features/books/BookModal.jsx';
@@ -120,6 +121,19 @@ export default function App() {
   }, [user]);
 
   useEffect(() => {
+    if (!user) return;
+
+    if (user.role === 'admin' && !['manageBooks', 'manageUsers'].includes(view)) {
+      setView('manageBooks');
+      return;
+    }
+
+    if (user.role !== 'admin' && ['manageBooks', 'manageUsers'].includes(view)) {
+      setView('home');
+    }
+  }, [user, view]);
+
+  useEffect(() => {
     let isMounted = true;
 
     const checkBackendHealth = async () => {
@@ -148,7 +162,7 @@ export default function App() {
   }, []);
 
   const handleViewChange = (nextView) => {
-    if (nextView === 'manageBooks' && user?.role !== 'admin') {
+    if (['manageBooks', 'manageUsers'].includes(nextView) && user?.role !== 'admin') {
       setView('home');
       return;
     }
@@ -281,6 +295,7 @@ export default function App() {
   const handleAuthSuccess = (authenticatedUser) => {
     setUser(authenticatedUser);
     setAuthNotice('');
+    setView(authenticatedUser.role === 'admin' ? 'manageBooks' : 'home');
   };
 
   const handleAddCustomBook = async (event) => {
@@ -666,6 +681,10 @@ export default function App() {
               {customBookError && <p className="manage-book-error">{customBookError}</p>}
             </aside>
           </div>
+        )}
+
+        {view === 'manageUsers' && user?.role === 'admin' && (
+          <ManageUsers />
         )}
 
         {view === 'bookshelf' && (

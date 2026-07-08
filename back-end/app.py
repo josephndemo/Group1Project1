@@ -380,6 +380,73 @@ def me():
     return jsonify({"id": user.id, "username": user.username, "email": user.email, "role": user.role})
 
 
+@app.route("/admin/users", methods=["GET"])
+@jwt_required()
+def admin_users():
+    user, error_response = _auth_user_or_401()
+    if error_response:
+        return error_response
+
+    admin_error = _admin_required_or_403(user)
+    if admin_error:
+        return admin_error
+
+    users = User.query.order_by(User.id.asc()).all()
+    return jsonify(
+        [
+            {
+                "id": account.id,
+                "username": account.username,
+                "email": account.email,
+                "role": account.role,
+                "shelf_count": len(account.shelves or []),
+                "favorite_count": len(account.favorites or []),
+            }
+            for account in users
+        ]
+    )
+
+
+@app.route("/admin/users/<int:user_id>", methods=["PUT", "DELETE"])
+@jwt_required()
+def admin_user_detail(user_id):
+    user, error_response = _auth_user_or_401()
+    if error_response:
+        return error_response
+
+    admin_error = _admin_required_or_403(user)
+    if admin_error:
+        return admin_error
+
+    target_user = User.query.filter_by(id=user_id).first_or_404(description="User not found")
+
+    if request.method == "PUT":
+        payload = request.get_json(silent=True) or {}
+        role = str(payload.get("role") or "").strip().lower()
+        if role not in {"admin", "user"}:
+            return jsonify({"error": "role must be admin or user"}), 400
+
+        target_user.role = role
+        db.session.commit()
+        return jsonify(
+            {
+                "id": target_user.id,
+                "username": target_user.username,
+                "email": target_user.email,
+                "role": target_user.role,
+                "shelf_count": len(target_user.shelves or []),
+                "favorite_count": len(target_user.favorites or []),
+            }
+        )
+
+    if target_user.id == user.id:
+        return jsonify({"error": "You cannot delete your own admin account"}), 400
+
+    db.session.delete(target_user)
+    db.session.commit()
+    return jsonify({"message": "user deleted"})
+
+
 @app.route("/favorites", methods=["GET", "POST"])
 @jwt_required()
 def favorites():

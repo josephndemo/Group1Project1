@@ -66,6 +66,12 @@ export const favoritesApi = {
     removeByExternalId: (externalId) => request(`/favorites/${encodeURIComponent(externalId)}`, { method: 'DELETE' }),
 };
 
+export const usersApi = {
+    list: () => request('/admin/users'),
+    update: (id, payload) => request(`/admin/users/${id}`, { method: 'PUT', body: JSON.stringify(payload) }),
+    remove: (id) => request(`/admin/users/${id}`, { method: 'DELETE' }),
+};
+
 
 export const reviewsApi = {
  list: () => request('/reviews'),

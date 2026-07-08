@@ -1,18 +1,22 @@
-import { BookOpen, BookmarkCheck, Heart, Library, Star } from 'lucide-react';
+import { BookOpen, BookmarkCheck, Heart, Library, Settings2, Star } from 'lucide-react';
 import icon1 from '../assets/icon1.png';
 
 export default function Navbar({ currentView, onViewChange, user, onLogout }) {
- const allLinks = [
-  { key: 'home', href: '#home', label: 'Home', Icon: Library },
+ const adminLinks = [
   { key: 'manageBooks', href: '#manageBooks', label: 'Manage Books', Icon: BookOpen },
+  { key: 'manageUsers', href: '#manageUsers', label: 'Manage Users', Icon: Settings2 },
+ ];
+
+ const readerLinks = [
+  { key: 'home', href: '#home', label: 'Home', Icon: Library },
   { key: 'bookshelf', href: '#bookshelf', label: 'My Bookshelf', Icon: BookmarkCheck },
   { key: 'bookClub', href: '#book-club', label: 'Book Club', Icon: Star },
   { key: 'favorites', href: '#favorites', label: 'Favorites', Icon: Heart },
  ];
 
  const links = user?.role === 'admin'
-  ? allLinks
-  : allLinks.filter((link) => link.key !== 'manageBooks');
+  ? adminLinks
+  : readerLinks;
 
  const displayName = user?.username || user?.email || 'User';
  const roleLabel = user?.role === 'admin' ? 'Admin' : 'Reader';
