@@ -2462,6 +2462,13 @@ main {
   letter-spacing: -0.035em;
 }
 
+.bc-review-form-meta {
+  margin: 0.45rem 0 0;
+  color: #475569;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
 .bc-form-field {
   display: grid;
   gap: 0.45rem;

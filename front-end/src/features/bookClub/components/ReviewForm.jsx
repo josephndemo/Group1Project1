@@ -1,7 +1,18 @@
 import { useState } from 'react';
 
 export default function ReviewForm({ bookTitle, submitting, onSubmit }) {
-  const [reviewerName, setReviewerName] = useState('');
+  const [reviewerName] = useState(() => {
+    if (typeof window === 'undefined' || !window.localStorage) {
+      return 'Anonymous Reader';
+    }
+
+    try {
+      const savedUser = JSON.parse(window.localStorage.getItem('library_user') || 'null');
+      return savedUser?.username || savedUser?.email || 'Anonymous Reader';
+    } catch {
+      return 'Anonymous Reader';
+    }
+  });
   const [comment, setComment] = useState('');
 
   function handleSubmit(event) {
@@ -15,25 +26,15 @@ export default function ReviewForm({ bookTitle, submitting, onSubmit }) {
       comment: trimmedComment,
     });
 
-    setReviewerName('');
     setComment('');
   }
 
   return (
     <form onSubmit={handleSubmit} className="bc-review-form">
       <div className="bc-review-form-header">
-        <span>Your review</span>
+        <span>Your Review</span>
         <h4>{bookTitle}</h4>
-      </div>
-
-      <div className="bc-form-field">
-        <label htmlFor="reviewerName">Name optional</label>
-        <input
-          id="reviewerName"
-          value={reviewerName}
-          onChange={(event) => setReviewerName(event.target.value)}
-          placeholder="Anonymous Reader"
-        />
+        <p className="bc-review-form-meta">Posting as {reviewerName}</p>
       </div>
 
       <div className="bc-form-field">
