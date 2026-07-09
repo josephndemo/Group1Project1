@@ -66,6 +66,11 @@ main {
   padding: 1.25rem 1rem 2rem;
 }
 
+.main-book-club {
+  max-width: 100%;
+  padding-inline: 0;
+}
+
 /* App Core Sticky Footer Layout */
 .app-container {
   display: flex;
@@ -1891,10 +1896,10 @@ main {
 }
 
 .bc-shell {
-  width: min(1180px, 100%);
+  width: min(100%, 1520px);
   margin: 0 auto;
   display: grid;
-  gap: 2rem;
+  gap: 2.25rem;
 }
 
 .bc-hero {
@@ -2097,7 +2102,7 @@ main {
 }
 
 .bc-section-header p {
-  max-width: 430px;
+  max-width: 620px;
   margin: 0;
   color: #64748b;
   font-size: 0.96rem;
@@ -2115,7 +2120,7 @@ main {
 }
 
 .bc-grid {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
 }
 
 .bc-card-stack {
@@ -2595,6 +2600,10 @@ main {
 }
 
 @media (max-width: 1100px) {
+  .main-book-club {
+    padding-inline: 0;
+  }
+
   .bc-hero {
     grid-template-columns: 1fr;
   }
@@ -2615,6 +2624,10 @@ main {
 }
 
 @media (max-width: 720px) {
+  .main-book-club {
+    padding-inline: 0;
+  }
+
   .bc-page {
     padding: 1rem;
   }

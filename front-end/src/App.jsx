@@ -431,7 +431,7 @@ export default function App() {
         onLogout={handleLogout}
       />
 
-      <main>
+      <main className={view === 'bookClub' ? 'main-book-club' : undefined}>
         {authNotice && <div className="status-message">{authNotice}</div>}
 
         {view === 'home' && (
