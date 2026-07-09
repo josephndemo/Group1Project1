@@ -2780,11 +2780,11 @@ main {
 
 .bc-review-modal-backdrop {
   position: fixed;
-  inset: 0;
-  z-index: 70;
+  inset: 70px 0 0;
+  z-index: 95;
   display: grid;
   place-items: center;
-  padding: clamp(0.75rem, 2vw, 1.5rem);
+  padding: clamp(0.6rem, 1.6vw, 1.1rem);
   background: rgba(2, 6, 23, 0.68);
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
@@ -2792,18 +2792,18 @@ main {
 
 .bc-review-modal {
   position: relative;
-  width: min(1180px, 100%);
-  max-height: min(90vh, 920px);
+  width: min(980px, 100%);
+  max-height: min(calc(100vh - 96px), 760px);
   overflow: auto;
   border-radius: 28px;
   box-shadow: 0 38px 100px rgba(2, 6, 23, 0.45);
 }
 
 .bc-review-modal-close {
-  position: sticky;
-  top: 0.8rem;
-  left: calc(100% - 3rem);
-  z-index: 3;
+  position: absolute;
+  top: 0.9rem;
+  right: 0.9rem;
+  z-index: 6;
   width: 2.25rem;
   height: 2.25rem;
   display: inline-flex;
@@ -2851,7 +2851,8 @@ main {
   }
 
   .bc-review-modal {
-    max-height: 94vh;
+    width: min(94vw, 620px);
+    max-height: min(calc(100vh - 84px), 700px);
   }
 
   .bc-review-modal-cover-wrap {
