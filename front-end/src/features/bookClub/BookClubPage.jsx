@@ -7,6 +7,9 @@ import ReviewForm from './components/ReviewForm.jsx';
 import ReviewList from './components/ReviewList.jsx';
 import { useBookClub } from './context/useBookClub.js';
 
+const fallbackCover =
+  'https://images.unsplash.com/photo-1543002588-bfa74002ed7e?auto=format&fit=crop&q=80&w=800';
+
 export default function BookClubPage({
   onToggleFavorite,
   onToggleBookmark,
@@ -220,6 +223,19 @@ export default function BookClubPage({
 
             <div className="bc-expanded-panel bc-review-modal-panel">
               <div className="bc-expanded-summary">
+                <div className="bc-review-modal-cover-wrap">
+                  <img
+                    src={reviewModalBook.coverUrl || fallbackCover}
+                    alt={`${reviewModalBook.title || 'Book'} cover`}
+                    loading="lazy"
+                    className="bc-review-modal-cover"
+                    onError={(event) => {
+                      event.currentTarget.onerror = null;
+                      event.currentTarget.src = fallbackCover;
+                    }}
+                  />
+                </div>
+
                 <span>Book details</span>
                 <h3>{reviewModalBook.title}</h3>
                 <p>{reviewModalBook.description || 'No description is available yet.'}</p>
