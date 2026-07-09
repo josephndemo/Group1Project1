@@ -1,6 +1,6 @@
 // Book Club presentation page: renders ranked books and threaded discussion
 // panels powered by the Book Club context service.
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import BookClubCard from './components/BookClubCard.jsx';
 import LoadingSkeleton from './components/LoadingSkeleton.jsx';
 import ReviewForm from './components/ReviewForm.jsx';
@@ -25,38 +25,7 @@ export default function BookClubPage({
 
   const [expandedBookId, setExpandedBookId] = useState(null);
 
-  const [featuredLimit, setFeaturedLimit] = useState(() => {
-    if (typeof window === 'undefined') {
-      return 3;
-    }
-
-    return window.matchMedia('(min-width: 1850px)').matches ? 4 : 3;
-  });
-
-  useEffect(() => {
-    if (typeof window === 'undefined') {
-      return undefined;
-    }
-
-    const mediaQuery = window.matchMedia('(min-width: 1850px)');
-
-    const updateFeaturedLimit = () => {
-      setFeaturedLimit(mediaQuery.matches ? 4 : 3);
-    };
-
-    updateFeaturedLimit();
-
-    if (typeof mediaQuery.addEventListener === 'function') {
-      mediaQuery.addEventListener('change', updateFeaturedLimit);
-      return () => mediaQuery.removeEventListener('change', updateFeaturedLimit);
-    }
-
-    mediaQuery.addListener(updateFeaturedLimit);
-    return () => mediaQuery.removeListener(updateFeaturedLimit);
-  }, []);
-
-  const topBooks = useMemo(() => books.slice(0, featuredLimit), [books, featuredLimit]);
-  const remainingBooks = useMemo(() => books.slice(featuredLimit), [books, featuredLimit]);
+  const topBooks = useMemo(() => books, [books]);
 
   const expandedBook = useMemo(
     () => books.find((book) => book.id === expandedBookId),
@@ -193,42 +162,6 @@ export default function BookClubPage({
               {expandedIsTopBook && expandedBook && renderExpandedPanel(expandedBook)}
             </section>
 
-            {remainingBooks.length > 0 && (
-              <section className="bc-section" aria-labelledby="more-books-heading">
-                <div className="bc-section-header">
-                  <div>
-                    <p className="bc-section-eyebrow muted">Community shelf</p>
-                    <h2 id="more-books-heading">More Book Club picks</h2>
-                  </div>
-
-                  <p>
-                    Continue exploring the rest of the club shelf without
-                    duplicating the featured cards above.
-                  </p>
-                </div>
-
-                <div className="bc-grid">
-                  {remainingBooks.map((book) => {
-                    const expanded = expandedBookId === book.id;
-
-                    return (
-                      <div key={book.id} className="bc-card-stack">
-                        <BookClubCard
-                          book={book}
-                          onReadMore={toggleExpandedBook}
-                          onReview={toggleExpandedBook}
-                          onToggleFavorite={onToggleFavorite}
-                          onToggleBookmark={onToggleBookmark}
-                          onAddToCart={onAddToCart}
-                        />
-
-                        {expanded && renderExpandedPanel(book)}
-                      </div>
-                    );
-                  })}
-                </div>
-              </section>
-            )}
           </>
         )}
       </div>
