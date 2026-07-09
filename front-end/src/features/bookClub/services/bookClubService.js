@@ -2,7 +2,7 @@ import { mockBookClubBooks } from '../data/mockBookClubData.js';
 import { rankBooks } from '../utils/ranking.js';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://group1project1-1.onrender.com';
-const USE_MOCKS = import.meta.env.VITE_USE_MOCK_BOOK_CLUB !== 'false';
+const USE_MOCKS = import.meta.env.VITE_USE_MOCK_BOOK_CLUB === 'true';
 const LOCAL_REVIEW_KEY = 'bookClub.mockReviews';
 
 function delay(ms = 250) {
@@ -39,9 +39,12 @@ function getMockBooksWithLocalReviews() {
 }
 
 async function request(path, options = {}) {
+  const token = typeof window !== 'undefined' ? window.localStorage?.getItem('library_token') : null;
+
   const response = await fetch(`${API_BASE_URL}${path}`, {
     headers: {
       'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...options.headers,
     },
     ...options,
@@ -54,6 +57,23 @@ async function request(path, options = {}) {
   return response.json();
 }
 
+function normalizeBookClubBook(book, index = 0) {
+  return {
+    id: String(book.id || book.book_key || index + 1),
+    title: book.title || 'Untitled',
+    author: book.author || 'Unknown Author',
+    coverUrl: book.cover_url || book.coverUrl,
+    publicationYear: book.first_published || 'N/A',
+    status: (book.users_completed || []).length > 0 ? 'Read' : 'In progress',
+    averageRating: Number(book.averageRating || 0),
+    reviewCount: Number(book.review_count || book.reviewCount || 0),
+    recommendationScore: Number(book.recommendationScore || 0),
+    usersReading: book.users_reading || book.usersReading || [],
+    usersCompleted: book.users_completed || book.usersCompleted || [],
+    reviews: book.reviews || [],
+  };
+}
+
 export const bookClubService = {
   async getBooks() {
     if (USE_MOCKS) {
@@ -61,7 +81,8 @@ export const bookClubService = {
       return rankBooks(getMockBooksWithLocalReviews());
     }
 
-    return request('/books');
+    const books = await request('/book-club/books');
+    return rankBooks((books || []).map((book, index) => normalizeBookClubBook(book, index)));
   },
 
   async getRankings() {
@@ -70,7 +91,8 @@ export const bookClubService = {
       return rankBooks(getMockBooksWithLocalReviews());
     }
 
-    return request('/books/rankings');
+    const books = await request('/book-club/books');
+    return rankBooks((books || []).map((book, index) => normalizeBookClubBook(book, index)));
   },
 
   async getBookReviews(bookId) {
@@ -80,7 +102,7 @@ export const bookClubService = {
       return book?.reviews || [];
     }
 
-    return request(`/books/${bookId}/reviews`);
+    return request(`/book-club/books/${encodeURIComponent(bookId)}/comments`);
   },
 
   async createReview(bookId, reviewInput) {
@@ -107,9 +129,9 @@ export const bookClubService = {
       return newReview;
     }
 
-    return request(`/books/${bookId}/reviews`, {
+    return request(`/book-club/books/${encodeURIComponent(bookId)}/comments`, {
       method: 'POST',
-      body: JSON.stringify(reviewInput),
+      body: JSON.stringify({ comment: reviewInput.comment }),
     });
   },
 };

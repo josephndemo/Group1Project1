@@ -46,7 +46,6 @@ export default function BookClubPage({
 
   async function handleSubmitReview(bookId, reviewInput) {
     await submitReview(bookId, reviewInput);
-    onSaveComment?.(bookId, reviewInput.comment);
   }
 
   function toggleExpandedBook(book) {

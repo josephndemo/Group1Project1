@@ -16,7 +16,7 @@ export default function ReviewList({ reviews = [] }) {
   if (!reviews.length) {
     return (
       <div className="bc-review-empty">
-        <span>No reviews yet</span>
+        <span>No comments yet</span>
         <p>Be the first reader to start the conversation.</p>
       </div>
     );
@@ -26,7 +26,7 @@ export default function ReviewList({ reviews = [] }) {
     <div className="bc-review-list">
       {reviews.map((review) => (
         <article key={review.id} className="bc-review-card">
-          <StarRating value={review.rating} readOnly size={16} />
+          {review.rating ? <StarRating value={review.rating} readOnly size={16} /> : null}
 
           <p>{review.comment}</p>
 

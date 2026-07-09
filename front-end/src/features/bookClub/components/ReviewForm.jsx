@@ -1,8 +1,6 @@
 import { useState } from 'react';
-import StarRating from './StarRating.jsx';
 
 export default function ReviewForm({ bookTitle, submitting, onSubmit }) {
-  const [rating, setRating] = useState(5);
   const [reviewerName, setReviewerName] = useState('');
   const [comment, setComment] = useState('');
 
@@ -13,12 +11,10 @@ export default function ReviewForm({ bookTitle, submitting, onSubmit }) {
     if (!trimmedComment) return;
 
     onSubmit({
-      rating,
       reviewerName,
       comment: trimmedComment,
     });
 
-    setRating(5);
     setReviewerName('');
     setComment('');
   }
@@ -28,11 +24,6 @@ export default function ReviewForm({ bookTitle, submitting, onSubmit }) {
       <div className="bc-review-form-header">
         <span>Your review</span>
         <h4>{bookTitle}</h4>
-      </div>
-
-      <div className="bc-form-field">
-        <label>Your rating</label>
-        <StarRating value={rating} onChange={setRating} label={`Rate ${bookTitle}`} />
       </div>
 
       <div className="bc-form-field">
@@ -51,7 +42,7 @@ export default function ReviewForm({ bookTitle, submitting, onSubmit }) {
           id="reviewComment"
           value={comment}
           onChange={(event) => setComment(event.target.value)}
-          placeholder="What did you think about this book?"
+          placeholder="Write a comment like Facebook..."
           rows={4}
         />
       </div>
@@ -61,7 +52,7 @@ export default function ReviewForm({ bookTitle, submitting, onSubmit }) {
         disabled={submitting || !comment.trim()}
         className="bc-submit-btn"
       >
-        {submitting ? 'Posting review...' : 'Post review'}
+        {submitting ? 'Posting comment...' : 'Post comment'}
       </button>
     </form>
   );

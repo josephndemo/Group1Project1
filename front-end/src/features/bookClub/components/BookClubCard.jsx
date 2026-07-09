@@ -44,6 +44,8 @@ export default function BookClubCard({
 }) {
   const isPurchasable = Boolean(book.price || book.purchaseUrl);
   const price = formatPrice(book.price);
+  const usersReading = book.usersReading || [];
+  const usersCompleted = book.usersCompleted || [];
 
   return (
     <article className={`bc-card ${featured ? 'bc-card-featured' : ''}`}>
@@ -126,8 +128,19 @@ export default function BookClubCard({
               <MessageCircle size={17} />
               <strong>{book.reviewCount || 0}</strong>
             </div>
-            <span>Reviews</span>
+            <span>Comments</span>
           </div>
+        </div>
+
+        <div className="bc-book-club-activity" style={{ display: 'grid', gap: '0.25rem', marginTop: '0.5rem' }}>
+          <small>
+            <strong>Reading:</strong>{' '}
+            {usersReading.length > 0 ? usersReading.map((entry) => entry.username).join(', ') : 'No one yet'}
+          </small>
+          <small>
+            <strong>Completed:</strong>{' '}
+            {usersCompleted.length > 0 ? usersCompleted.map((entry) => entry.username).join(', ') : 'No one yet'}
+          </small>
         </div>
 
         <p className="bc-description">

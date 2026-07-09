@@ -3,7 +3,7 @@ from flask_jwt_extended import get_jwt_identity, jwt_required
 from sqlalchemy import func, or_
 from sqlalchemy.exc import IntegrityError
 
-from models import Book, Review, db
+from models import Book, BookClubComment, Review, User, db
 from schemas import review_schema, review_schema_many
 
 reviews_bp = Blueprint("reviews", __name__)
@@ -170,3 +170,141 @@ def book_club_recommendations():
   }
   for row in rows
  ])
+
+
+@reviews_bp.route("/book-club/books", methods=["GET"])
+@jwt_required()
+def book_club_books():
+ user_books = (
+  db.session.query(Book, User)
+  .join(User, User.id == Book.user_id)
+  .filter(Book.shelf_id.isnot(None))
+  .order_by(Book.updated_at.desc(), Book.created_at.desc())
+  .all()
+ )
+
+ aggregated = {}
+
+ for shelf_book, owner in user_books:
+  book_key = str(shelf_book.external_id or shelf_book.id)
+  item = aggregated.get(book_key)
+  if item is None:
+   item = {
+    "id": book_key,
+    "book_key": book_key,
+    "title": shelf_book.title,
+    "author": shelf_book.author,
+    "cover_url": shelf_book.cover_url,
+    "first_published": shelf_book.first_published,
+    "publisher": shelf_book.publisher,
+    "users_reading": [],
+    "users_completed": [],
+    "reviews": [],
+    "review_count": 0,
+   }
+   aggregated[book_key] = item
+
+  identity = {
+   "user_id": owner.id,
+   "username": owner.username,
+   "status": shelf_book.status,
+  }
+
+  if shelf_book.status == "completed":
+   if all(entry["user_id"] != owner.id for entry in item["users_completed"]):
+    item["users_completed"].append(identity)
+  else:
+   if all(entry["user_id"] != owner.id for entry in item["users_reading"]):
+    item["users_reading"].append(identity)
+
+ comments = (
+  db.session.query(BookClubComment, User)
+  .join(User, User.id == BookClubComment.user_id)
+  .order_by(BookClubComment.created_at.desc())
+  .all()
+ )
+
+ for comment, author in comments:
+  item = aggregated.get(comment.book_key)
+  if not item:
+   continue
+
+  item["reviews"].append(
+   {
+    "id": comment.id,
+    "comment": comment.comment_text,
+    "reviewerName": author.username,
+    "createdAt": comment.created_at.isoformat() if comment.created_at else None,
+   }
+  )
+
+ for item in aggregated.values():
+  item["review_count"] = len(item["reviews"])
+  item["recommendationScore"] = min(100, item["review_count"] * 8 + len(item["users_completed"]) * 10)
+  item["averageRating"] = 5 if item["users_completed"] else 4 if item["users_reading"] else 0
+
+ result = sorted(
+  aggregated.values(),
+  key=lambda entry: (entry["review_count"], len(entry["users_completed"]), len(entry["users_reading"])),
+  reverse=True,
+ )
+
+ return jsonify(result)
+
+
+@reviews_bp.route("/book-club/books/<path:book_key>/comments", methods=["GET", "POST"])
+@jwt_required()
+def book_club_comments(book_key):
+ user_id = _request_user_id()
+ if user_id is None:
+  return jsonify({"error": "authentication required"}), 401
+
+ normalized_key = str(book_key).strip()
+ if not normalized_key:
+  return jsonify({"error": "book_key is required"}), 400
+
+ if request.method == "GET":
+  comments = (
+   db.session.query(BookClubComment, User)
+   .join(User, User.id == BookClubComment.user_id)
+   .filter(BookClubComment.book_key == normalized_key)
+   .order_by(BookClubComment.created_at.desc())
+   .all()
+  )
+  return jsonify(
+   [
+    {
+     "id": comment.id,
+     "comment": comment.comment_text,
+     "reviewerName": author.username,
+     "createdAt": comment.created_at.isoformat() if comment.created_at else None,
+    }
+    for comment, author in comments
+   ]
+  )
+
+ payload = request.get_json(silent=True) or {}
+ comment_text = str(payload.get("comment") or "").strip()
+ if not comment_text:
+  return jsonify({"error": "comment is required"}), 400
+
+ comment = BookClubComment(
+  book_key=normalized_key,
+  comment_text=comment_text,
+  user_id=user_id,
+ )
+ db.session.add(comment)
+ db.session.commit()
+
+ user = User.query.get(user_id)
+ return (
+  jsonify(
+   {
+    "id": comment.id,
+    "comment": comment.comment_text,
+    "reviewerName": user.username if user else "Anonymous Reader",
+    "createdAt": comment.created_at.isoformat() if comment.created_at else None,
+   }
+  ),
+  201,
+ )

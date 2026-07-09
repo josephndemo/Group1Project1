@@ -33,6 +33,11 @@ class User(UserMixin, db.Model):
         back_populates="user",
         cascade="all, delete-orphan",
     )
+    book_club_comments = db.relationship(
+        "BookClubComment",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
 
     def __repr__(self):
         return f"<User {self.username} ({self.role})>"
@@ -152,3 +157,24 @@ class Favorite(db.Model):
 
     def __repr__(self):
         return f"<Favorite user_id={self.user_id} external_id={self.external_id}>"
+
+
+class BookClubComment(db.Model):
+    __tablename__ = "book_club_comments"
+
+    id = db.Column(db.Integer, primary_key=True)
+    book_key = db.Column(db.String(200), nullable=False, index=True)
+    comment_text = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime, server_default=db.func.now())
+    updated_at = db.Column(
+        db.DateTime,
+        server_default=db.func.now(),
+        onupdate=db.func.now(),
+    )
+
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+
+    user = db.relationship("User", back_populates="book_club_comments")
+
+    def __repr__(self):
+        return f"<BookClubComment id={self.id} book_key={self.book_key}>"
