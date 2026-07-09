@@ -1,3 +1,5 @@
+// Root application shell that orchestrates authenticated user flows,
+// catalog browsing, shelves, favorites, and admin management views.
 import { useState, useEffect } from 'react';
 import { showError, showInfo, showSuccess } from './utils/swal.js';
 import Navbar from './components/Navbar.jsx';
@@ -10,7 +12,7 @@ import Favorites from './features/books/Favorites.jsx';
 import { Search } from 'lucide-react';
 import BookCard from './features/books/BookCard.jsx';
 import BookClub from './features/bookClub/BookClub.jsx';
-import { booksApi, favoritesApi, shelvesApi, systemApi } from './api/client.js';
+import { booksApi, favoritesApi, shelvesApi } from './api/client.js';
 
 const defaultCover = 'https://images.unsplash.com/photo-1543002588-bfa74002ed7e?auto=format&fit=crop&q=80&w=400';
 
@@ -53,7 +55,18 @@ const getBookKey = (book) => {
 };
 
 export default function App() {
-  const [view, setView] = useState('home');
+  // Default admins into admin workflows and readers into the home catalog.
+  const [view, setView] = useState(() => {
+    const savedUser = localStorage.getItem('library_user');
+    if (!savedUser) return 'home';
+
+    try {
+      const parsedUser = JSON.parse(savedUser);
+      return parsedUser?.role === 'admin' ? 'manageBooks' : 'home';
+    } catch {
+      return 'home';
+    }
+  });
   const [bookshelf, setBookshelf] = useState([]);
   const [favorites, setFavorites] = useState([]);
   const [currentShelfId, setCurrentShelfId] = useState(null);
@@ -68,7 +81,6 @@ export default function App() {
     return savedUser ? JSON.parse(savedUser) : null;
   });
   const [authNotice, setAuthNotice] = useState('');
-  const [backendStatus, setBackendStatus] = useState({ state: 'checking', message: 'Checking backend status...' });
   const [customBook, setCustomBook] = useState({ title: '', author: '', notes: '', first_published: '', publisher: '', cover_url: '' });
   const [customBookError, setCustomBookError] = useState('');
   const [editingBook, setEditingBook] = useState(null);
@@ -120,48 +132,8 @@ export default function App() {
     loadUserBooks();
   }, [user]);
 
-  useEffect(() => {
-    if (!user) return;
-
-    if (user.role === 'admin' && !['manageBooks', 'manageUsers'].includes(view)) {
-      setView('manageBooks');
-      return;
-    }
-
-    if (user.role !== 'admin' && ['manageBooks', 'manageUsers'].includes(view)) {
-      setView('home');
-    }
-  }, [user, view]);
-
-  useEffect(() => {
-    let isMounted = true;
-
-    const checkBackendHealth = async () => {
-      try {
-        const result = await systemApi.health();
-        if (!isMounted) return;
-
-        if (result?.status === 'ok') {
-          setBackendStatus({ state: 'online', message: 'Backend is running.' });
-        } else {
-          setBackendStatus({ state: 'offline', message: 'Backend status is unknown.' });
-        }
-      } catch {
-        if (!isMounted) return;
-        setBackendStatus({ state: 'offline', message: 'Backend is not reachable.' });
-      }
-    };
-
-    checkBackendHealth();
-    const intervalId = setInterval(checkBackendHealth, 30000);
-
-    return () => {
-      isMounted = false;
-      clearInterval(intervalId);
-    };
-  }, []);
-
   const handleViewChange = (nextView) => {
+    // Enforce role-based navigation at the top-level router state.
     if (['manageBooks', 'manageUsers'].includes(nextView) && user?.role !== 'admin') {
       setView('home');
       return;

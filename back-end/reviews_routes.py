@@ -6,10 +6,17 @@ from sqlalchemy.exc import IntegrityError
 from models import Book, BookClubComment, Review, User, db
 from schemas import review_schema, review_schema_many
 
+# Review and Book Club blueprint.
+# Handles:
+# - per-user review CRUD
+# - public recommendation summaries
+# - cross-user book club discussion feed and comments
+
 reviews_bp = Blueprint("reviews", __name__)
 
 
 def _request_user_id():
+ # Convert JWT identity to int user id for downstream DB filters.
  identity = get_jwt_identity()
  if identity is None:
   return None
@@ -17,6 +24,7 @@ def _request_user_id():
 
 
 def _parse_rating(payload):
+ # Shared validation helper to enforce rating bounds for review endpoints.
  try:
   rating = int(payload.get("rating"))
  except (TypeError, ValueError):
@@ -31,6 +39,8 @@ def _parse_rating(payload):
 @reviews_bp.route("/reviews", methods=["GET", "POST"])
 @jwt_required()
 def reviews_collection():
+ # GET: current user's own reviews
+ # POST: create or update one review per user per book
  user_id = _request_user_id()
  if user_id is None:
     return jsonify({"error": "authentication required"}), 401
@@ -85,6 +95,7 @@ def reviews_collection():
 @reviews_bp.route("/reviews/<int:review_id>", methods=["GET", "PUT", "DELETE"])
 @jwt_required()
 def review_detail(review_id):
+ # Enforce per-user ownership for read/update/delete operations.
  user_id = _request_user_id()
  if user_id is None:
     return jsonify({"error": "authentication required"}), 401
@@ -119,6 +130,7 @@ def review_detail(review_id):
 @reviews_bp.route("/books/<int:book_id>/reviews", methods=["GET"])
 @jwt_required()
 def reviews_for_book(book_id):
+ # Return public reviews plus the caller's private review (if present).
  user_id = _request_user_id()
  if user_id is None:
     return jsonify({"error": "authentication required"}), 401
@@ -136,6 +148,7 @@ def reviews_for_book(book_id):
 
 @reviews_bp.route("/book-club/recommendations", methods=["GET"])
 def book_club_recommendations():
+ # Lightweight public recommendations based on public review aggregates.
  try:
    rows = (
     db.session.query(
@@ -175,6 +188,8 @@ def book_club_recommendations():
 @reviews_bp.route("/book-club/books", methods=["GET"])
 @jwt_required()
 def book_club_books():
+ # Build a cross-user discussion feed from books placed on personal shelves.
+ # Each item reports who is reading/completed and attached comment thread data.
  user_books = (
   db.session.query(Book, User)
   .join(User, User.id == Book.user_id)
@@ -255,6 +270,7 @@ def book_club_books():
 @reviews_bp.route("/book-club/books/<path:book_key>/comments", methods=["GET", "POST"])
 @jwt_required()
 def book_club_comments(book_key):
+ # Comment thread endpoint used by the Book Club UI (facebook-style discussion).
  user_id = _request_user_id()
  if user_id is None:
   return jsonify({"error": "authentication required"}), 401

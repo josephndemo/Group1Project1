@@ -1,3 +1,5 @@
+// Book Club presentation page: renders ranked books and threaded discussion
+// panels powered by the Book Club context service.
 import { useMemo, useState } from 'react';
 import BookClubCard from './components/BookClubCard.jsx';
 import LoadingSkeleton from './components/LoadingSkeleton.jsx';
@@ -6,7 +8,6 @@ import ReviewList from './components/ReviewList.jsx';
 import { useBookClub } from './context/useBookClub.js';
 
 export default function BookClubPage({
-  onSaveComment,
   onToggleFavorite,
   onToggleBookmark,
   onAddToCart,
@@ -36,13 +37,6 @@ export default function BookClubPage({
     () => topBooks.some((book) => book.id === expandedBookId),
     [topBooks, expandedBookId]
   );
-
-  const totalReviews = useMemo(
-    () => books.reduce((sum, book) => sum + Number(book.reviewCount || 0), 0),
-    [books]
-  );
-
-  const topScore = books[0]?.recommendationScore || 0;
 
   async function handleSubmitReview(bookId, reviewInput) {
     await submitReview(bookId, reviewInput);

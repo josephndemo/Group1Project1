@@ -3,8 +3,12 @@ from flask_sqlalchemy import SQLAlchemy
 
 db = SQLAlchemy()
 
+# SQLAlchemy models for authentication, library tracking, reviews, favorites,
+# and Book Club social discussion.
+
 
 class User(UserMixin, db.Model):
+    # Account principal used for authentication and ownership of all user data.
     __tablename__ = "users"
 
     id = db.Column(db.Integer, primary_key=True)
@@ -44,6 +48,7 @@ class User(UserMixin, db.Model):
 
 
 class Shelf(db.Model):
+    # Personal shelf container; users can organize selected books here.
     __tablename__ = "shelves"
 
     id = db.Column(db.Integer, primary_key=True)
@@ -67,6 +72,7 @@ class Shelf(db.Model):
 
 
 class Book(db.Model):
+    # Book entity used both for shared catalog (shelf_id=None) and shelf copies.
     __tablename__ = "books"
 
     id = db.Column(db.Integer, primary_key=True)
@@ -102,6 +108,7 @@ class Book(db.Model):
 
 
 class Review(db.Model):
+    # One review per user per book; supports private/public visibility.
     __tablename__ = "reviews"
 
     id = db.Column(db.Integer, primary_key=True)
@@ -134,6 +141,7 @@ class Review(db.Model):
 
 
 class Favorite(db.Model):
+    # Per-user persisted favorites list keyed by stable external book id.
     __tablename__ = "favorites"
 
     id = db.Column(db.Integer, primary_key=True)
@@ -160,6 +168,7 @@ class Favorite(db.Model):
 
 
 class BookClubComment(db.Model):
+    # Cross-user comments attached to a logical Book Club book key.
     __tablename__ = "book_club_comments"
 
     id = db.Column(db.Integer, primary_key=True)
