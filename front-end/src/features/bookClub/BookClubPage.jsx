@@ -1,6 +1,6 @@
 // Book Club presentation page: renders ranked books and threaded discussion
 // panels powered by the Book Club context service.
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import BookClubCard from './components/BookClubCard.jsx';
 import LoadingSkeleton from './components/LoadingSkeleton.jsx';
 import ReviewForm from './components/ReviewForm.jsx';
@@ -25,8 +25,38 @@ export default function BookClubPage({
 
   const [expandedBookId, setExpandedBookId] = useState(null);
 
-  const topBooks = useMemo(() => books.slice(0, 3), [books]);
-  const remainingBooks = useMemo(() => books.slice(3), [books]);
+  const [featuredLimit, setFeaturedLimit] = useState(() => {
+    if (typeof window === 'undefined') {
+      return 3;
+    }
+
+    return window.matchMedia('(min-width: 1850px)').matches ? 4 : 3;
+  });
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return undefined;
+    }
+
+    const mediaQuery = window.matchMedia('(min-width: 1850px)');
+
+    const updateFeaturedLimit = () => {
+      setFeaturedLimit(mediaQuery.matches ? 4 : 3);
+    };
+
+    updateFeaturedLimit();
+
+    if (typeof mediaQuery.addEventListener === 'function') {
+      mediaQuery.addEventListener('change', updateFeaturedLimit);
+      return () => mediaQuery.removeEventListener('change', updateFeaturedLimit);
+    }
+
+    mediaQuery.addListener(updateFeaturedLimit);
+    return () => mediaQuery.removeListener(updateFeaturedLimit);
+  }, []);
+
+  const topBooks = useMemo(() => books.slice(0, featuredLimit), [books, featuredLimit]);
+  const remainingBooks = useMemo(() => books.slice(featuredLimit), [books, featuredLimit]);
 
   const expandedBook = useMemo(
     () => books.find((book) => book.id === expandedBookId),
