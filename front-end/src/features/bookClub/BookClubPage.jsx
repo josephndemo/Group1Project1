@@ -24,6 +24,7 @@ export default function BookClubPage({
   } = useBookClub();
 
   const [expandedBookId, setExpandedBookId] = useState(null);
+  const [reviewFocusRequest, setReviewFocusRequest] = useState({ bookId: null, nonce: 0 });
 
   const topBooks = useMemo(() => books, [books]);
 
@@ -42,7 +43,13 @@ export default function BookClubPage({
   }
 
   function toggleExpandedBook(book) {
+    setReviewFocusRequest({ bookId: null, nonce: 0 });
     setExpandedBookId((currentId) => (currentId === book.id ? null : book.id));
+  }
+
+  function handleReviewClick(book) {
+    setExpandedBookId(book.id);
+    setReviewFocusRequest({ bookId: book.id, nonce: Date.now() });
   }
 
   function renderExpandedPanel(book) {
@@ -79,6 +86,9 @@ export default function BookClubPage({
         <ReviewForm
           bookTitle={book.title}
           submitting={submittingReview}
+          autoFocusRequest={
+            reviewFocusRequest.bookId === book.id ? reviewFocusRequest.nonce : null
+          }
           onSubmit={(reviewInput) => handleSubmitReview(book.id, reviewInput)}
         />
 
@@ -152,7 +162,7 @@ export default function BookClubPage({
                     book={book}
                     featured
                     onReadMore={toggleExpandedBook}
-                    onReview={toggleExpandedBook}
+                    onReview={handleReviewClick}
                     onToggleFavorite={onToggleFavorite}
                     onToggleBookmark={onToggleBookmark}
                     onAddToCart={onAddToCart}

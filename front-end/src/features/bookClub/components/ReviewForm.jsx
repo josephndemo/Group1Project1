@@ -1,6 +1,11 @@
-import { useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 
-export default function ReviewForm({ bookTitle, submitting, onSubmit }) {
+export default function ReviewForm({
+  bookTitle,
+  submitting,
+  autoFocusRequest,
+  onSubmit,
+}) {
   const [reviewerName] = useState(() => {
     if (typeof window === 'undefined' || !window.localStorage) {
       return 'Anonymous Reader';
@@ -14,6 +19,20 @@ export default function ReviewForm({ bookTitle, submitting, onSubmit }) {
     }
   });
   const [comment, setComment] = useState('');
+  const commentInputId = useId();
+  const formRef = useRef(null);
+  const commentRef = useRef(null);
+
+  useEffect(() => {
+    if (!autoFocusRequest || !commentRef.current || !formRef.current) {
+      return;
+    }
+
+    formRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    commentRef.current.focus({ preventScroll: true });
+    const textLength = commentRef.current.value.length;
+    commentRef.current.setSelectionRange(textLength, textLength);
+  }, [autoFocusRequest]);
 
   function handleSubmit(event) {
     event.preventDefault();
@@ -30,7 +49,7 @@ export default function ReviewForm({ bookTitle, submitting, onSubmit }) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="bc-review-form">
+    <form ref={formRef} onSubmit={handleSubmit} className="bc-review-form">
       <div className="bc-review-form-header">
         <span>Your Review</span>
         <h4>{bookTitle}</h4>
@@ -38,9 +57,10 @@ export default function ReviewForm({ bookTitle, submitting, onSubmit }) {
       </div>
 
       <div className="bc-form-field">
-        <label htmlFor="reviewComment">Comment</label>
+        <label htmlFor={commentInputId}>Comment</label>
         <textarea
-          id="reviewComment"
+          id={commentInputId}
+          ref={commentRef}
           value={comment}
           onChange={(event) => setComment(event.target.value)}
           placeholder="Write a comment like Facebook..."
