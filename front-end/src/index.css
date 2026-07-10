@@ -66,6 +66,11 @@ main {
   padding: 1.25rem 1rem 2rem;
 }
 
+.main-book-club {
+  max-width: 100%;
+  padding-inline: 0;
+}
+
 /* App Core Sticky Footer Layout */
 .app-container {
   display: flex;
@@ -1891,10 +1896,10 @@ main {
 }
 
 .bc-shell {
-  width: min(1180px, 100%);
+  width: min(100%, 1520px);
   margin: 0 auto;
   display: grid;
-  gap: 2rem;
+  gap: 2.25rem;
 }
 
 .bc-hero {
@@ -2097,7 +2102,7 @@ main {
 }
 
 .bc-section-header p {
-  max-width: 430px;
+  max-width: 620px;
   margin: 0;
   color: #64748b;
   font-size: 0.96rem;
@@ -2115,7 +2120,27 @@ main {
 }
 
 .bc-grid {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+.bc-grid .bc-metric {
+  min-height: 64px;
+  padding: 0.65rem;
+}
+
+.bc-grid .bc-metric strong {
+  font-size: 0.92rem;
+}
+
+.bc-grid .bc-metric span {
+  margin-top: 0.34rem;
+  font-size: 0.64rem;
+  letter-spacing: 0.045em;
+}
+
+.bc-grid .bc-metric svg {
+  width: 14px;
+  height: 14px;
 }
 
 .bc-card-stack {
@@ -2166,13 +2191,14 @@ main {
   width: 100%;
   height: 100%;
   display: block;
-  object-fit: cover;
-  transform: scale(1.01);
+  object-fit: contain;
+  object-position: center;
+  transform: none;
   transition: transform 0.45s ease;
 }
 
 .bc-card:hover .bc-cover {
-  transform: scale(1.055);
+  transform: none;
 }
 
 .bc-cover-wrap::after {
@@ -2462,6 +2488,13 @@ main {
   letter-spacing: -0.035em;
 }
 
+.bc-review-form-meta {
+  margin: 0.45rem 0 0;
+  color: #475569;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
 .bc-form-field {
   display: grid;
   gap: 0.45rem;
@@ -2587,7 +2620,17 @@ main {
   color: #64748b;
 }
 
+@media (min-width: 1850px) {
+  .bc-featured-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
 @media (max-width: 1100px) {
+  .main-book-club {
+    padding-inline: 0;
+  }
+
   .bc-hero {
     grid-template-columns: 1fr;
   }
@@ -2608,6 +2651,10 @@ main {
 }
 
 @media (max-width: 720px) {
+  .main-book-club {
+    padding-inline: 0;
+  }
+
   .bc-page {
     padding: 1rem;
   }
@@ -2731,6 +2778,69 @@ main {
   grid-column: 1 / -1;
 }
 
+.bc-review-modal-backdrop {
+  position: fixed;
+  inset: 70px 0 0;
+  z-index: 95;
+  display: grid;
+  place-items: center;
+  padding: clamp(0.6rem, 1.6vw, 1.1rem);
+  background: rgba(2, 6, 23, 0.68);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+.bc-review-modal {
+  position: relative;
+  width: min(980px, 100%);
+  max-height: min(calc(100vh - 96px), 760px);
+  overflow: auto;
+  border-radius: 28px;
+  box-shadow: 0 38px 100px rgba(2, 6, 23, 0.45);
+}
+
+.bc-review-modal-close {
+  position: absolute;
+  top: 0.9rem;
+  right: 0.9rem;
+  z-index: 6;
+  width: 2.25rem;
+  height: 2.25rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.82);
+  color: #ffffff;
+  font-size: 1.45rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.bc-review-modal-panel {
+  min-height: 100%;
+}
+
+.bc-review-modal-cover-wrap {
+  width: min(260px, 100%);
+  aspect-ratio: 3 / 4;
+  margin: 0 0 0.9rem;
+  border-radius: 18px;
+  overflow: hidden;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.1);
+}
+
+.bc-review-modal-cover {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: contain;
+  background: #f8fafc;
+}
+
 @media (max-width: 900px) {
   .bc-expanded-panel {
     grid-template-columns: 1fr;
@@ -2738,6 +2848,15 @@ main {
 
   .bc-expanded-summary dl {
     grid-template-columns: 1fr;
+  }
+
+  .bc-review-modal {
+    width: min(94vw, 620px);
+    max-height: min(calc(100vh - 84px), 700px);
+  }
+
+  .bc-review-modal-cover-wrap {
+    width: min(220px, 100%);
   }
 }
 /* Defensive modal fix for current flat BookModal markup */

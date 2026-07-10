@@ -18,6 +18,12 @@ from schemas import (
 from reviews_routes import reviews_bp
 from config import Config
 
+# Main Flask application module.
+# Responsibilities:
+# - initialize app extensions (JWT, CORS, SQLAlchemy, migrations)
+# - perform startup safety checks and bootstrap routines
+# - expose authentication, shelf, book, favorites, and admin routes
+
 app = Flask(__name__)
 app.config.from_object(Config)
 
@@ -112,6 +118,7 @@ DEFAULT_USERS = [
 
 
 def _initialize_database():
+    # Keep hosted environments resilient by applying migrations at boot when allowed.
     # Keep Render-like deployments resilient when migrations were not run manually.
     if os.getenv("AUTO_DB_UPGRADE", "true").lower() != "true":
         return
@@ -140,6 +147,7 @@ def _initialize_database():
 
 
 def _repair_legacy_schema():
+    # Backfill legacy deployments where prior columns may be missing.
     with app.app_context():
         repairs = [
             "ALTER TABLE users ADD COLUMN IF NOT EXISTS role VARCHAR(20) NOT NULL DEFAULT 'user'",
@@ -172,6 +180,7 @@ def _repair_legacy_schema():
 
 
 def _ensure_catalog_seeded():
+    # Seed catalog books only when the shared catalog is empty.
     if os.getenv("AUTO_SEED_CATALOG", "true").lower() != "true":
         return
 
@@ -223,6 +232,7 @@ def _ensure_catalog_seeded():
 
 
 def _sync_default_users():
+    # Upsert a known set of demo users for deterministic QA and demos.
     if os.getenv("AUTO_SYNC_DEFAULT_USERS", "true").lower() != "true":
         return
 
@@ -261,6 +271,7 @@ def _sync_default_users():
 
 
 def _auth_user_or_401():
+    # Resolve the JWT identity into a concrete user account.
     identity = get_jwt_identity()
     if identity is None:
         return None, (jsonify({"error": "authentication required"}), 401)
@@ -273,12 +284,14 @@ def _auth_user_or_401():
 
 
 def _admin_required_or_403(user):
+    # Centralized admin-authorization guard for privileged routes.
     if user.role != "admin":
         return jsonify({"error": "admin access required"}), 403
     return None
 
 
 def _ensure_user_shelf(user):
+    # Guarantee every user has one personal shelf for reading workflow features.
     shelf = Shelf.query.filter_by(user_id=user.id).order_by(Shelf.id.asc()).first()
     if shelf:
         return shelf, False
@@ -330,6 +343,7 @@ def health():
 
 @app.route("/auth/register", methods=["POST"])
 def register():
+    # Public signup endpoint with uniqueness validation by username/email.
     payload = request.get_json(silent=True) or {}
     username = payload.get("username", "").strip()
     email = payload.get("email", "").strip()
@@ -353,6 +367,7 @@ def register():
 
 @app.route("/auth/login", methods=["POST"])
 def login():
+    # Authenticate by username/email and return a short-lived JWT access token.
     payload = request.get_json(silent=True) or {}
     identifier = payload.get("identifier", "").strip()
     password = payload.get("password", "")
@@ -390,6 +405,7 @@ def login():
 @app.route("/auth/me", methods=["GET"])
 @jwt_required()
 def me():
+    # Return the authenticated profile used for session restoration in the UI.
     user, error_response = _auth_user_or_401()
     if error_response:
         return error_response
@@ -400,6 +416,7 @@ def me():
 @app.route("/admin/users", methods=["GET"])
 @jwt_required()
 def admin_users():
+    # Admin-only account listing for management workflows.
     user, error_response = _auth_user_or_401()
     if error_response:
         return error_response
@@ -427,6 +444,7 @@ def admin_users():
 @app.route("/admin/users/<int:user_id>", methods=["PUT", "DELETE"])
 @jwt_required()
 def admin_user_detail(user_id):
+    # Admin-only user role updates and account deletions.
     user, error_response = _auth_user_or_401()
     if error_response:
         return error_response
@@ -467,6 +485,7 @@ def admin_user_detail(user_id):
 @app.route("/favorites", methods=["GET", "POST"])
 @jwt_required()
 def favorites():
+    # Persisted user favorites (non-browser-local) for cross-device continuity.
     user, error_response = _auth_user_or_401()
     if error_response:
         return error_response

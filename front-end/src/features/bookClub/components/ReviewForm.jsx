@@ -1,10 +1,38 @@
-import { useState } from 'react';
-import StarRating from './StarRating.jsx';
+import { useEffect, useId, useRef, useState } from 'react';
 
-export default function ReviewForm({ bookTitle, submitting, onSubmit }) {
-  const [rating, setRating] = useState(5);
-  const [reviewerName, setReviewerName] = useState('');
+export default function ReviewForm({
+  bookTitle,
+  submitting,
+  autoFocusRequest,
+  onSubmit,
+}) {
+  const [reviewerName] = useState(() => {
+    if (typeof window === 'undefined' || !window.localStorage) {
+      return 'Anonymous Reader';
+    }
+
+    try {
+      const savedUser = JSON.parse(window.localStorage.getItem('library_user') || 'null');
+      return savedUser?.username || savedUser?.email || 'Anonymous Reader';
+    } catch {
+      return 'Anonymous Reader';
+    }
+  });
   const [comment, setComment] = useState('');
+  const commentInputId = useId();
+  const formRef = useRef(null);
+  const commentRef = useRef(null);
+
+  useEffect(() => {
+    if (!autoFocusRequest || !commentRef.current || !formRef.current) {
+      return;
+    }
+
+    formRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    commentRef.current.focus({ preventScroll: true });
+    const textLength = commentRef.current.value.length;
+    commentRef.current.setSelectionRange(textLength, textLength);
+  }, [autoFocusRequest]);
 
   function handleSubmit(event) {
     event.preventDefault();
@@ -13,45 +41,29 @@ export default function ReviewForm({ bookTitle, submitting, onSubmit }) {
     if (!trimmedComment) return;
 
     onSubmit({
-      rating,
       reviewerName,
       comment: trimmedComment,
     });
 
-    setRating(5);
-    setReviewerName('');
     setComment('');
   }
 
   return (
-    <form onSubmit={handleSubmit} className="bc-review-form">
+    <form ref={formRef} onSubmit={handleSubmit} className="bc-review-form">
       <div className="bc-review-form-header">
-        <span>Your review</span>
+        <span>Your Review</span>
         <h4>{bookTitle}</h4>
+        <p className="bc-review-form-meta">Posting as {reviewerName}</p>
       </div>
 
       <div className="bc-form-field">
-        <label>Your rating</label>
-        <StarRating value={rating} onChange={setRating} label={`Rate ${bookTitle}`} />
-      </div>
-
-      <div className="bc-form-field">
-        <label htmlFor="reviewerName">Name optional</label>
-        <input
-          id="reviewerName"
-          value={reviewerName}
-          onChange={(event) => setReviewerName(event.target.value)}
-          placeholder="Anonymous Reader"
-        />
-      </div>
-
-      <div className="bc-form-field">
-        <label htmlFor="reviewComment">Comment</label>
+        <label htmlFor={commentInputId}>Comment</label>
         <textarea
-          id="reviewComment"
+          id={commentInputId}
+          ref={commentRef}
           value={comment}
           onChange={(event) => setComment(event.target.value)}
-          placeholder="What did you think about this book?"
+          placeholder="Write a comment like Facebook..."
           rows={4}
         />
       </div>
@@ -61,7 +73,7 @@ export default function ReviewForm({ bookTitle, submitting, onSubmit }) {
         disabled={submitting || !comment.trim()}
         className="bc-submit-btn"
       >
-        {submitting ? 'Posting review...' : 'Post review'}
+        {submitting ? 'Posting comment...' : 'Post comment'}
       </button>
     </form>
   );

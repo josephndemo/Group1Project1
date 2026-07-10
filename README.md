@@ -46,9 +46,16 @@ https://group1project1.onrender.com
 
 > Add screenshots of your application here.
 
+### Login Page
+![Login Page](./images/login.png)
+
+### Admin Page
+![Admin Page](./images/admin.png)
+
+
 ### Home Page
 
-![Home Page](./images/home.png)
+![Home Page](./images/user.png)
 
 ### Bookshelf Tracker
 
@@ -59,13 +66,13 @@ https://group1project1.onrender.com
 ![Favorites](./images/favorites.png)
 
 
-### Manage Books
-![Manage Books](./images/managebooks.png)
+### Book Club
+![Book Club](./images/bookclub.png)
 
 
 ### Reviews & Notes
 
-![Reviews](./images/reviews.png)
+![Reviews](./images/review.png)
 
 ---
 

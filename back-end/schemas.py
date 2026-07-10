@@ -1,7 +1,10 @@
 from marshmallow import Schema, fields, validate
 
+# Marshmallow schemas define API payload validation and response serialization.
+
 
 class BookSchema(Schema):
+    # Shared schema for catalog and user-shelf books.
     id = fields.Int(dump_only=True)
     title = fields.Str(required=True, validate=validate.Length(min=1, max=200))
     author = fields.Str(required=True, validate=validate.Length(min=1, max=200))
@@ -19,6 +22,7 @@ class BookSchema(Schema):
 
 
 class ShelfSchema(Schema):
+    # Shelf payload schema for CRUD endpoints.
     id = fields.Int(dump_only=True)
     name = fields.Str(required=True, validate=validate.Length(min=1, max=120))
     description = fields.Str(allow_none=True)
@@ -28,6 +32,7 @@ class ShelfSchema(Schema):
 
 
 class ReviewSchema(Schema):
+    # Review payload schema with rating constraints.
     id = fields.Int(dump_only=True)
     rating = fields.Int(required=True, validate=validate.Range(min=1, max=5))
     review_text = fields.Str(allow_none=True)
@@ -41,6 +46,7 @@ class ReviewSchema(Schema):
 
 
 class FavoriteSchema(Schema):
+    # Favorite payload schema for persisted user favorites.
     id = fields.Int(dump_only=True)
     external_id = fields.Str(required=True, validate=validate.Length(min=1, max=200))
     title = fields.Str(required=True, validate=validate.Length(min=1, max=200))

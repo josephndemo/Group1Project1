@@ -1,12 +1,16 @@
-import { useMemo, useState } from 'react';
+// Book Club presentation page: renders ranked books and threaded discussion
+// panels powered by the Book Club context service.
+import { useEffect, useMemo, useState } from 'react';
 import BookClubCard from './components/BookClubCard.jsx';
 import LoadingSkeleton from './components/LoadingSkeleton.jsx';
 import ReviewForm from './components/ReviewForm.jsx';
 import ReviewList from './components/ReviewList.jsx';
 import { useBookClub } from './context/useBookClub.js';
 
+const fallbackCover =
+  'https://images.unsplash.com/photo-1543002588-bfa74002ed7e?auto=format&fit=crop&q=80&w=800';
+
 export default function BookClubPage({
-  onSaveComment,
   onToggleFavorite,
   onToggleBookmark,
   onAddToCart,
@@ -23,9 +27,10 @@ export default function BookClubPage({
   } = useBookClub();
 
   const [expandedBookId, setExpandedBookId] = useState(null);
+  const [reviewModalBookId, setReviewModalBookId] = useState(null);
+  const [reviewFocusRequest, setReviewFocusRequest] = useState({ bookId: null, nonce: 0 });
 
-  const topBooks = useMemo(() => books.slice(0, 3), [books]);
-  const remainingBooks = useMemo(() => books.slice(3), [books]);
+  const topBooks = useMemo(() => books, [books]);
 
   const expandedBook = useMemo(
     () => books.find((book) => book.id === expandedBookId),
@@ -37,20 +42,41 @@ export default function BookClubPage({
     [topBooks, expandedBookId]
   );
 
-  const totalReviews = useMemo(
-    () => books.reduce((sum, book) => sum + Number(book.reviewCount || 0), 0),
-    [books]
+  const reviewModalBook = useMemo(
+    () => books.find((book) => book.id === reviewModalBookId) || null,
+    [books, reviewModalBookId]
   );
 
-  const topScore = books[0]?.recommendationScore || 0;
+  useEffect(() => {
+    if (!reviewModalBookId) return undefined;
+
+    const onKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        setReviewModalBookId(null);
+      }
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [reviewModalBookId]);
 
   async function handleSubmitReview(bookId, reviewInput) {
     await submitReview(bookId, reviewInput);
-    onSaveComment?.(bookId, reviewInput.comment);
   }
 
   function toggleExpandedBook(book) {
+    setReviewFocusRequest({ bookId: null, nonce: 0 });
     setExpandedBookId((currentId) => (currentId === book.id ? null : book.id));
+  }
+
+  function handleReviewClick(book) {
+    setReviewModalBookId(book.id);
+    setReviewFocusRequest({ bookId: book.id, nonce: Date.now() });
+  }
+
+  function closeReviewModal() {
+    setReviewModalBookId(null);
+    setReviewFocusRequest({ bookId: null, nonce: 0 });
   }
 
   function renderExpandedPanel(book) {
@@ -87,6 +113,9 @@ export default function BookClubPage({
         <ReviewForm
           bookTitle={book.title}
           submitting={submittingReview}
+          autoFocusRequest={
+            reviewFocusRequest.bookId === book.id ? reviewFocusRequest.nonce : null
+          }
           onSubmit={(reviewInput) => handleSubmitReview(book.id, reviewInput)}
         />
 
@@ -160,7 +189,7 @@ export default function BookClubPage({
                     book={book}
                     featured
                     onReadMore={toggleExpandedBook}
-                    onReview={toggleExpandedBook}
+                    onReview={handleReviewClick}
                     onToggleFavorite={onToggleFavorite}
                     onToggleBookmark={onToggleBookmark}
                     onAddToCart={onAddToCart}
@@ -170,45 +199,86 @@ export default function BookClubPage({
               {expandedIsTopBook && expandedBook && renderExpandedPanel(expandedBook)}
             </section>
 
-            {remainingBooks.length > 0 && (
-              <section className="bc-section" aria-labelledby="more-books-heading">
-                <div className="bc-section-header">
-                  <div>
-                    <p className="bc-section-eyebrow muted">Community shelf</p>
-                    <h2 id="more-books-heading">More Book Club picks</h2>
-                  </div>
-
-                  <p>
-                    Continue exploring the rest of the club shelf without
-                    duplicating the featured cards above.
-                  </p>
-                </div>
-
-                <div className="bc-grid">
-                  {remainingBooks.map((book) => {
-                    const expanded = expandedBookId === book.id;
-
-                    return (
-                      <div key={book.id} className="bc-card-stack">
-                        <BookClubCard
-                          book={book}
-                          onReadMore={toggleExpandedBook}
-                          onReview={toggleExpandedBook}
-                          onToggleFavorite={onToggleFavorite}
-                          onToggleBookmark={onToggleBookmark}
-                          onAddToCart={onAddToCart}
-                        />
-
-                        {expanded && renderExpandedPanel(book)}
-                      </div>
-                    );
-                  })}
-                </div>
-              </section>
-            )}
           </>
         )}
       </div>
+
+      {reviewModalBook && (
+        <div
+          className="bc-review-modal-backdrop"
+          role="dialog"
+          aria-modal="true"
+          aria-label={`Review ${reviewModalBook.title}`}
+          onClick={closeReviewModal}
+        >
+          <div className="bc-review-modal" onClick={(event) => event.stopPropagation()}>
+            <button
+              type="button"
+              className="bc-review-modal-close"
+              aria-label="Close review"
+              onClick={closeReviewModal}
+            >
+              ×
+            </button>
+
+            <div className="bc-expanded-panel bc-review-modal-panel">
+              <div className="bc-expanded-summary">
+                <div className="bc-review-modal-cover-wrap">
+                  <img
+                    src={reviewModalBook.coverUrl || fallbackCover}
+                    alt={`${reviewModalBook.title || 'Book'} cover`}
+                    loading="lazy"
+                    className="bc-review-modal-cover"
+                    onError={(event) => {
+                      event.currentTarget.onerror = null;
+                      event.currentTarget.src = fallbackCover;
+                    }}
+                  />
+                </div>
+
+                <span>Book details</span>
+                <h3>{reviewModalBook.title}</h3>
+                <p>{reviewModalBook.description || 'No description is available yet.'}</p>
+
+                <dl>
+                  <div>
+                    <dt>Author</dt>
+                    <dd>{reviewModalBook.author || 'Unknown Author'}</dd>
+                  </div>
+
+                  <div>
+                    <dt>Genre</dt>
+                    <dd>{reviewModalBook.genre || 'General Fiction'}</dd>
+                  </div>
+
+                  <div>
+                    <dt>Published</dt>
+                    <dd>{reviewModalBook.publicationYear || 'Year unknown'}</dd>
+                  </div>
+
+                  <div>
+                    <dt>Recommendation</dt>
+                    <dd>{reviewModalBook.recommendationScore || 0}%</dd>
+                  </div>
+                </dl>
+              </div>
+
+              <ReviewForm
+                bookTitle={reviewModalBook.title}
+                submitting={submittingReview}
+                autoFocusRequest={
+                  reviewFocusRequest.bookId === reviewModalBook.id
+                    ? reviewFocusRequest.nonce
+                    : null
+                }
+                onSubmit={(reviewInput) => handleSubmitReview(reviewModalBook.id, reviewInput)}
+              />
+
+              <ReviewList reviews={reviewModalBook.reviews} />
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }

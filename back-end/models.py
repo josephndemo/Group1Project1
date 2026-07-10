@@ -3,8 +3,12 @@ from flask_sqlalchemy import SQLAlchemy
 
 db = SQLAlchemy()
 
+# SQLAlchemy models for authentication, library tracking, reviews, favorites,
+# and Book Club social discussion.
+
 
 class User(UserMixin, db.Model):
+    # Account principal used for authentication and ownership of all user data.
     __tablename__ = "users"
 
     id = db.Column(db.Integer, primary_key=True)
@@ -33,12 +37,18 @@ class User(UserMixin, db.Model):
         back_populates="user",
         cascade="all, delete-orphan",
     )
+    book_club_comments = db.relationship(
+        "BookClubComment",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
 
     def __repr__(self):
         return f"<User {self.username} ({self.role})>"
 
 
 class Shelf(db.Model):
+    # Personal shelf container; users can organize selected books here.
     __tablename__ = "shelves"
 
     id = db.Column(db.Integer, primary_key=True)
@@ -62,6 +72,7 @@ class Shelf(db.Model):
 
 
 class Book(db.Model):
+    # Book entity used both for shared catalog (shelf_id=None) and shelf copies.
     __tablename__ = "books"
 
     id = db.Column(db.Integer, primary_key=True)
@@ -97,6 +108,7 @@ class Book(db.Model):
 
 
 class Review(db.Model):
+    # One review per user per book; supports private/public visibility.
     __tablename__ = "reviews"
 
     id = db.Column(db.Integer, primary_key=True)
@@ -129,6 +141,7 @@ class Review(db.Model):
 
 
 class Favorite(db.Model):
+    # Per-user persisted favorites list keyed by stable external book id.
     __tablename__ = "favorites"
 
     id = db.Column(db.Integer, primary_key=True)
@@ -152,3 +165,25 @@ class Favorite(db.Model):
 
     def __repr__(self):
         return f"<Favorite user_id={self.user_id} external_id={self.external_id}>"
+
+
+class BookClubComment(db.Model):
+    # Cross-user comments attached to a logical Book Club book key.
+    __tablename__ = "book_club_comments"
+
+    id = db.Column(db.Integer, primary_key=True)
+    book_key = db.Column(db.String(200), nullable=False, index=True)
+    comment_text = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime, server_default=db.func.now())
+    updated_at = db.Column(
+        db.DateTime,
+        server_default=db.func.now(),
+        onupdate=db.func.now(),
+    )
+
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+
+    user = db.relationship("User", back_populates="book_club_comments")
+
+    def __repr__(self):
+        return f"<BookClubComment id={self.id} book_key={self.book_key}>"
