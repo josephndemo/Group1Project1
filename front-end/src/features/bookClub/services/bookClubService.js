@@ -1,8 +1,8 @@
 import { mockBookClubBooks } from '../data/mockBookClubData.js';
 import { rankBooks } from '../utils/ranking.js';
+import { bookClubApi, reviewsApi } from '../../../api/client.js';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://group1project1-1.onrender.com';
-const USE_MOCKS = import.meta.env.VITE_USE_MOCK_BOOK_CLUB !== 'false';
+const USE_MOCKS = import.meta.env.VITE_USE_MOCK_BOOK_CLUB === 'true';
 const LOCAL_REVIEW_KEY = 'bookClub.mockReviews';
 
 function delay(ms = 250) {
@@ -29,6 +29,34 @@ function writeStoredReviews(reviewsByBookId) {
   window.localStorage.setItem(LOCAL_REVIEW_KEY, JSON.stringify(reviewsByBookId));
 }
 
+function normalizeApiReview(review = {}) {
+  return {
+    id: review.id,
+    bookId: review.book_id || review.bookId,
+    rating: Number(review.rating || 0),
+    comment: review.review_text || review.comment || '',
+    reviewerName: review.user?.username || review.reviewerName || 'Reader',
+    createdAt: review.created_at || review.createdAt,
+  };
+}
+
+function normalizeApiBook(book = {}) {
+  const reviews = (book.reviews || []).map(normalizeApiReview);
+  const averageRating = Number(book.average_rating ?? book.averageRating ?? 0);
+  const reviewCount = Number(book.review_count ?? book.reviewCount ?? reviews.length);
+
+  return {
+    ...book,
+    id: book.id || book.book_id,
+    bookId: book.book_id || book.id,
+    coverUrl: book.cover_url || book.coverUrl,
+    externalId: book.external_id || book.externalId,
+    averageRating,
+    reviewCount,
+    reviews,
+  };
+}
+
 function getMockBooksWithLocalReviews() {
   const localReviews = readStoredReviews();
 
@@ -38,22 +66,6 @@ function getMockBooksWithLocalReviews() {
   }));
 }
 
-async function request(path, options = {}) {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
-    ...options,
-  });
-
-  if (!response.ok) {
-    throw new Error(`Request failed with status ${response.status}`);
-  }
-
-  return response.json();
-}
-
 export const bookClubService = {
   async getBooks() {
     if (USE_MOCKS) {
@@ -61,16 +73,12 @@ export const bookClubService = {
       return rankBooks(getMockBooksWithLocalReviews());
     }
 
-    return request('/books');
+    const books = await bookClubApi.recommendations();
+    return rankBooks((books || []).map(normalizeApiBook));
   },
 
   async getRankings() {
-    if (USE_MOCKS) {
-      await delay();
-      return rankBooks(getMockBooksWithLocalReviews());
-    }
-
-    return request('/books/rankings');
+    return this.getBooks();
   },
 
   async getBookReviews(bookId) {
@@ -80,7 +88,8 @@ export const bookClubService = {
       return book?.reviews || [];
     }
 
-    return request(`/books/${bookId}/reviews`);
+    const reviews = await reviewsApi.listByBook(bookId);
+    return (reviews || []).map(normalizeApiReview);
   },
 
   async createReview(bookId, reviewInput) {
@@ -107,9 +116,13 @@ export const bookClubService = {
       return newReview;
     }
 
-    return request(`/books/${bookId}/reviews`, {
-      method: 'POST',
-      body: JSON.stringify(reviewInput),
+    const createdReview = await reviewsApi.create({
+      book_id: bookId,
+      rating: Number(reviewInput.rating),
+      review_text: reviewInput.comment?.trim() || '',
+      is_public: true,
     });
+
+    return normalizeApiReview(createdReview);
   },
 };
