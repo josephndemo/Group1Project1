@@ -1456,6 +1456,35 @@ main {
   box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.14);
 }
 
+.auth-password-field {
+  position: relative;
+}
+
+.auth-password-field input {
+  padding-right: 4.6rem;
+}
+
+.auth-password-toggle {
+  position: absolute;
+  top: 50%;
+  right: 0.75rem;
+  transform: translateY(-50%);
+  border: 0;
+  padding: 0.25rem 0.35rem;
+  background: transparent;
+  color: #2563eb;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.auth-password-toggle:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
 .auth-submit-btn {
   margin-top: 0.9rem;
   border: none;
