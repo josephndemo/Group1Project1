@@ -3,6 +3,27 @@ const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'https://group1projec
 const buildUrl = (path) => `${API_BASE_URL}${path.startsWith('/') ? path : `/${path}`}`;
 
 const getToken = () => localStorage.getItem('library_token');
+const SESSION_EXPIRED_MESSAGE = 'Your session has expired due to inactivity. Please log in again.';
+
+class ApiError extends Error {
+    constructor(message, status, payload) {
+        super(message);
+        this.name = 'ApiError';
+        this.status = status;
+        this.payload = payload;
+    }
+}
+
+const handleUnauthorized = () => {
+    localStorage.removeItem('library_token');
+    localStorage.removeItem('library_user');
+
+    window.dispatchEvent(
+        new CustomEvent('library:session-expired', {
+            detail: { message: SESSION_EXPIRED_MESSAGE },
+        })
+    );
+};
 
 const request = async (path, options = {}) => {
     const headers = {
@@ -11,6 +32,7 @@ const request = async (path, options = {}) => {
     };
 
     const token = getToken();
+    const hadAuthToken = Boolean(token);
     if (token) {
         headers.Authorization = `Bearer ${token}`;
     }
@@ -26,7 +48,10 @@ const request = async (path, options = {}) => {
 
         if (!response.ok) {
             const message = typeof data === 'object' && data !== null ? (data.error || data.message || 'Request failed') : data || 'Request failed';
-            throw new Error(message);
+            if (response.status === 401 && hadAuthToken) {
+                handleUnauthorized();
+            }
+            throw new ApiError(message, response.status, data);
         }
 
         return data;
@@ -42,6 +67,7 @@ const request = async (path, options = {}) => {
 export const authApi = {
     register: (payload) => request('/auth/register', { method: 'POST', body: JSON.stringify(payload) }),
     login: (payload) => request('/auth/login', { method: 'POST', body: JSON.stringify(payload) }),
+    refresh: (payload) => request('/auth/refresh', { method: 'POST', body: JSON.stringify(payload) }),
 };
 
 export const booksApi = {

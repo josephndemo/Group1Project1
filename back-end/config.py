@@ -1,4 +1,5 @@
 import os
+from datetime import timedelta
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 from sqlalchemy.engine.url import make_url
@@ -63,6 +64,10 @@ def _database_url():
 class Config:
     SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret-key")
     JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "dev-jwt-secret")
+    PERMANENT_SESSION_LIFETIME = timedelta(minutes=5)
+    SESSION_REFRESH_EACH_REQUEST = True
+    JWT_ACCESS_TOKEN_EXPIRES = timedelta(minutes=5)
+    JWT_REFRESH_TOKEN_EXPIRES = timedelta(days=7)
     SQLALCHEMY_DATABASE_URI = _database_url()
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     TESTING = False

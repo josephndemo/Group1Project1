@@ -14,6 +14,8 @@ import BookCard from './features/books/BookCard.jsx';
 import BookClub from './features/bookClub/BookClub.jsx';
 import { booksApi, favoritesApi, shelvesApi } from './api/client.js';
 
+const SESSION_EXPIRED_MESSAGE = 'Your session has expired due to inactivity. Please log in again.';
+
 const defaultCover = 'https://images.unsplash.com/photo-1543002588-bfa74002ed7e?auto=format&fit=crop&q=80&w=400';
 
 const normalizeBook = (book) => {
@@ -81,10 +83,30 @@ export default function App() {
     return savedUser ? JSON.parse(savedUser) : null;
   });
   const [authNotice, setAuthNotice] = useState('');
+  const [authErrorMessage, setAuthErrorMessage] = useState('');
   const [customBook, setCustomBook] = useState({ title: '', author: '', notes: '', first_published: '', publisher: '', cover_url: '' });
   const [customBookError, setCustomBookError] = useState('');
   const [editingBook, setEditingBook] = useState(null);
   const [editDraft, setEditDraft] = useState({ title: '', author: '', notes: '', first_published: '', publisher: '', cover_url: '' });
+
+  useEffect(() => {
+    const handleSessionExpired = (event) => {
+      const message = event?.detail?.message || SESSION_EXPIRED_MESSAGE;
+      localStorage.removeItem('library_token');
+      localStorage.removeItem('library_user');
+      setUser(null);
+      setBooks([]);
+      setBookshelf([]);
+      setFavorites([]);
+      setCurrentShelfId(null);
+      setAuthNotice('');
+      setAuthErrorMessage(message);
+      setView('home');
+    };
+
+    window.addEventListener('library:session-expired', handleSessionExpired);
+    return () => window.removeEventListener('library:session-expired', handleSessionExpired);
+  }, []);
 
   useEffect(() => {
     const loadUserBooks = async () => {
@@ -261,12 +283,14 @@ export default function App() {
     setFavorites([]);
     setCurrentShelfId(null);
     setAuthNotice('Signed out.');
+    setAuthErrorMessage('');
     showInfo('Signed out', 'You have been signed out of the library.');
   };
 
   const handleAuthSuccess = (authenticatedUser) => {
     setUser(authenticatedUser);
     setAuthNotice('');
+    setAuthErrorMessage('');
     setView(authenticatedUser.role === 'admin' ? 'manageBooks' : 'home');
   };
 
@@ -416,7 +440,7 @@ export default function App() {
     return (
       <div className="app-container">
         <main className="auth-main">
-          <AuthPanel onAuthSuccess={handleAuthSuccess} />
+          <AuthPanel onAuthSuccess={handleAuthSuccess} forcedMessage={authErrorMessage} />
         </main>
       </div>
     );
