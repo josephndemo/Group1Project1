@@ -1,8 +1,14 @@
 import os
 
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, session
 from flask_bcrypt import Bcrypt
-from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
+from flask_jwt_extended import (
+    JWTManager,
+    create_access_token,
+    create_refresh_token,
+    get_jwt_identity,
+    jwt_required,
+)
 from flask_cors import CORS
 from flask_migrate import Migrate, upgrade
 from sqlalchemy import inspect, text
@@ -63,6 +69,40 @@ migrate = Migrate(app, db)
 bcrypt = Bcrypt(app)
 jwt = JWTManager(app)
 app.register_blueprint(reviews_bp)
+
+
+SESSION_EXPIRED_MESSAGE = "Your session has expired due to inactivity. Please log in again."
+
+
+@app.before_request
+def _refresh_permanent_session_timeout():
+    # For session-based auth, renew inactivity timeout on every authenticated request.
+    if session.get("user_id"):
+        session.permanent = True
+        session.modified = True
+
+
+@jwt.expired_token_loader
+def _expired_token_handler(_jwt_header, _jwt_payload):
+    session.clear()
+    return jsonify({"error": SESSION_EXPIRED_MESSAGE, "code": "token_expired"}), 401
+
+
+@jwt.unauthorized_loader
+def _missing_token_handler(_reason):
+    return jsonify({"error": "authentication required", "code": "auth_required"}), 401
+
+
+@jwt.invalid_token_loader
+def _invalid_token_handler(_reason):
+    session.clear()
+    return jsonify({"error": SESSION_EXPIRED_MESSAGE, "code": "invalid_token"}), 401
+
+
+@jwt.revoked_token_loader
+def _revoked_token_handler(_jwt_header, _jwt_payload):
+    session.clear()
+    return jsonify({"error": SESSION_EXPIRED_MESSAGE, "code": "token_revoked"}), 401
 
 
 DEFAULT_USERS = [
@@ -280,6 +320,10 @@ def _auth_user_or_401():
     if not user:
         return None, (jsonify({"error": "user not found"}), 404)
 
+    session["user_id"] = user.id
+    session.permanent = True
+    session.modified = True
+
     return user, None
 
 
@@ -388,10 +432,16 @@ def login():
         app.logger.warning("Login failed because database is not ready: %s", exc)
         return jsonify({"error": "database not ready"}), 503
 
+    session["user_id"] = user.id
+    session.permanent = True
+    session.modified = True
+
     access_token = create_access_token(identity=str(user.id))
+    refresh_token = create_refresh_token(identity=str(user.id))
     return jsonify(
         {
             "access_token": access_token,
+            "refresh_token": refresh_token,
             "user": {
                 "id": user.id,
                 "username": user.username,
@@ -400,6 +450,24 @@ def login():
             },
         }
     )
+
+
+@app.route("/auth/refresh", methods=["POST"])
+@jwt_required(refresh=True)
+def refresh_access_token():
+    # New access tokens are only issued through refresh-token flow.
+    identity = get_jwt_identity()
+    user = User.query.get(int(identity)) if identity is not None else None
+    if not user:
+        session.clear()
+        return jsonify({"error": "user not found"}), 404
+
+    session["user_id"] = user.id
+    session.permanent = True
+    session.modified = True
+
+    access_token = create_access_token(identity=str(user.id))
+    return jsonify({"access_token": access_token})
 
 
 @app.route("/auth/me", methods=["GET"])

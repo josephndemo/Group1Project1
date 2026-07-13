@@ -22,7 +22,7 @@ const fallbackHighlights = [...mockBookClubBooks]
         review_count: book.reviewCount || 0,
     }));
 
-export default function AuthPanel({ onAuthSuccess }) {
+export default function AuthPanel({ onAuthSuccess, forcedMessage = '' }) {
     const [mode, setMode] = useState('login');
     const [form, setForm] = useState({ username: '', email: '', password: '', confirmPassword: '' });
     const [message, setMessage] = useState('');
@@ -282,7 +282,7 @@ export default function AuthPanel({ onAuthSuccess }) {
                     </p>
 
                     {message && <p className="auth-feedback success">{message}</p>}
-                    {error && <p className="auth-feedback error">{error}</p>}
+                    {(forcedMessage || error) && <p className="auth-feedback error">{forcedMessage || error}</p>}
 
                     <section className="auth-guest-preview" aria-label="Guest preview carousel">
                         <div className="auth-guest-preview-header">
