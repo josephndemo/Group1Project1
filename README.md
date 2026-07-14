@@ -15,6 +15,11 @@ OpenLibrary Hub was developed as a Software Engineering Capstone Project with a 
 * Responsive user experience
 * State management best practices
 * API integration and asynchronous programming
+* API integration and asynchronous programming
+* Component-based software design
+* Client-side routing with React Router
+* Dynamic data fetching and rendering
+* Search, filtering, and data organization
 
 The application integrates with the Open Library REST API to provide access to one of the world's largest collections of bibliographic records.
 
