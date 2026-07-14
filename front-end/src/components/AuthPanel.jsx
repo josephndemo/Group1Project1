@@ -28,6 +28,8 @@ export default function AuthPanel({ onAuthSuccess, forcedMessage = '' }) {
     const [message, setMessage] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [clubHighlights, setClubHighlights] = useState([]);
     const [highlightsLoading, setHighlightsLoading] = useState(true);
 
@@ -82,6 +84,8 @@ export default function AuthPanel({ onAuthSuccess, forcedMessage = '' }) {
         setError('');
         setMessage('');
         setForm({ username: '', email: '', password: '', confirmPassword: '' });
+        setShowPassword(false);
+        setShowConfirmPassword(false);
     };
 
     const handleSubmit = async (e) => {
@@ -218,20 +222,50 @@ export default function AuthPanel({ onAuthSuccess, forcedMessage = '' }) {
                         )}
 
                         <label htmlFor="password">Password</label>
-                        <input id="password" type="password" name="password" value={form.password} onChange={handleChange} autoComplete={mode === 'login' ? 'current-password' : 'new-password'} required />
+                        <div className="auth-password-field">
+                            <input
+                                id="password"
+                                type={showPassword ? 'text' : 'password'}
+                                name="password"
+                                value={form.password}
+                                onChange={handleChange}
+                                autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+                                required
+                            />
+                            <button
+                                type="button"
+                                className="auth-password-toggle"
+                                onClick={() => setShowPassword((visible) => !visible)}
+                                aria-label={showPassword ? 'Hide password' : 'Show password'}
+                                aria-pressed={showPassword}
+                            >
+                                {showPassword ? 'Hide' : 'Show'}
+                            </button>
+                        </div>
 
                         {mode === 'register' && (
                             <>
                                 <label htmlFor="confirmPassword">Confirm password</label>
-                                <input
-                                    id="confirmPassword"
-                                    type="password"
-                                    name="confirmPassword"
-                                    value={form.confirmPassword}
-                                    onChange={handleChange}
-                                    autoComplete="new-password"
-                                    required
-                                />
+                                <div className="auth-password-field">
+                                    <input
+                                        id="confirmPassword"
+                                        type={showConfirmPassword ? 'text' : 'password'}
+                                        name="confirmPassword"
+                                        value={form.confirmPassword}
+                                        onChange={handleChange}
+                                        autoComplete="new-password"
+                                        required
+                                    />
+                                    <button
+                                        type="button"
+                                        className="auth-password-toggle"
+                                        onClick={() => setShowConfirmPassword((visible) => !visible)}
+                                        aria-label={showConfirmPassword ? 'Hide confirmation password' : 'Show confirmation password'}
+                                        aria-pressed={showConfirmPassword}
+                                    >
+                                        {showConfirmPassword ? 'Hide' : 'Show'}
+                                    </button>
+                                </div>
                             </>
                         )}
 

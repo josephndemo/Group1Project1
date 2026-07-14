@@ -356,6 +356,23 @@ _sync_default_users()
 _ensure_catalog_seeded()
 
 
+@app.route("/", methods=["GET"])
+def index():
+    return jsonify({
+        "message": "OpenLibrary Hub backend is running",
+        "health": "/health",
+        "environment": os.getenv("FLASK_ENV", "production"),
+        "routes": {
+            "auth": ["/auth/register", "/auth/login", "/auth/me"],
+            "books": ["/books", "/books/<book_id>"],
+            "shelves": ["/shelves", "/shelves/<shelf_id>/books"],
+            "favorites": ["/favorites"],
+            "reviews": ["/reviews", "/books/<book_id>/reviews"],
+            "book_club": ["/book-club/recommendations"],
+        },
+    })
+
+
 @app.route("/health", methods=["GET"])
 def health():
     try:
