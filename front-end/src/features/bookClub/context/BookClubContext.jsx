@@ -48,7 +48,7 @@ function reducer(state, action) {
       return {
         ...state,
         submittingReview: false,
-        notice: 'Review posted successfully.',
+        notice: 'Comment posted successfully.',
       };
 
     case 'SUBMIT_REVIEW_ERROR':
@@ -88,7 +88,6 @@ export function BookClubProvider({ children }) {
     const optimisticReview = {
       id: `optimistic-${Date.now()}`,
       bookId,
-      rating: Number(reviewInput.rating),
       comment: reviewInput.comment,
       reviewerName: reviewInput.reviewerName || 'Anonymous Reader',
       createdAt: new Date().toISOString(),
@@ -107,16 +106,16 @@ export function BookClubProvider({ children }) {
       const refreshedBooks = await bookClubService.getBooks();
       dispatch({ type: 'LOAD_SUCCESS', payload: refreshedBooks });
       dispatch({ type: 'SUBMIT_REVIEW_SUCCESS' });
-      showSuccess('Review posted', 'Your review was shared with the club.');
+      showSuccess('Comment posted', 'Your comment was shared with the club.');
     } catch (error) {
       await loadBooks();
 
-      const message = error.message || 'Could not submit review.';
+      const message = error.message || 'Could not submit comment.';
       dispatch({
         type: 'SUBMIT_REVIEW_ERROR',
         payload: message,
       });
-      showError('Review failed', message);
+      showError('Comment failed', message);
     }
   }
 

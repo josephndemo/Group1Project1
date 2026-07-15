@@ -1,6 +1,6 @@
 import { mockBookClubBooks } from '../data/mockBookClubData.js';
 import { rankBooks } from '../utils/ranking.js';
-import { bookClubApi, reviewsApi } from '../../../api/client.js';
+import { bookClubApi } from '../../../api/client.js';
 
 const USE_MOCKS = import.meta.env.VITE_USE_MOCK_BOOK_CLUB === 'true';
 const LOCAL_REVIEW_KEY = 'bookClub.mockReviews';
@@ -32,7 +32,7 @@ function writeStoredReviews(reviewsByBookId) {
 function normalizeApiReview(review = {}) {
   return {
     id: review.id,
-    bookId: review.book_id || review.bookId,
+    bookId: review.book_id || review.bookId || review.book_key || review.bookKey,
     rating: Number(review.rating || 0),
     comment: review.review_text || review.comment || '',
     reviewerName: review.user?.username || review.reviewerName || 'Reader',
@@ -41,16 +41,22 @@ function normalizeApiReview(review = {}) {
 }
 
 function normalizeApiBook(book = {}) {
-  const reviews = (book.reviews || []).map(normalizeApiReview);
+  const reviews = (book.reviews || book.comments || []).map(normalizeApiReview);
   const averageRating = Number(book.average_rating ?? book.averageRating ?? 0);
   const reviewCount = Number(book.review_count ?? book.reviewCount ?? reviews.length);
+  const bookKey = String(book.book_key || book.bookKey || book.external_id || book.externalId || book.book_id || book.id || '');
 
   return {
     ...book,
-    id: book.id || book.book_id,
+    id: bookKey || book.id || book.book_id,
     bookId: book.book_id || book.id,
+    bookKey,
     coverUrl: book.cover_url || book.coverUrl,
     externalId: book.external_id || book.externalId,
+    firstPublished: book.first_published || book.firstPublished,
+    publicationYear: book.first_published || book.firstPublished || book.publicationYear,
+    usersReading: book.users_reading || book.usersReading || [],
+    usersCompleted: book.users_completed || book.usersCompleted || [],
     averageRating,
     reviewCount,
     reviews,
@@ -73,7 +79,7 @@ export const bookClubService = {
       return rankBooks(getMockBooksWithLocalReviews());
     }
 
-    const books = await bookClubApi.recommendations();
+    const books = await bookClubApi.books();
     return rankBooks((books || []).map(normalizeApiBook));
   },
 
@@ -88,7 +94,7 @@ export const bookClubService = {
       return book?.reviews || [];
     }
 
-    const reviews = await reviewsApi.listByBook(bookId);
+    const reviews = await bookClubApi.comments(bookId);
     return (reviews || []).map(normalizeApiReview);
   },
 
@@ -116,11 +122,8 @@ export const bookClubService = {
       return newReview;
     }
 
-    const createdReview = await reviewsApi.create({
-      book_id: bookId,
-      rating: Number(reviewInput.rating),
-      review_text: reviewInput.comment?.trim() || '',
-      is_public: true,
+    const createdReview = await bookClubApi.createComment(bookId, {
+      comment: reviewInput.comment?.trim() || '',
     });
 
     return normalizeApiReview(createdReview);

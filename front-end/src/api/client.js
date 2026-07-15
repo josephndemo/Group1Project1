@@ -109,6 +109,9 @@ export const reviewsApi = {
 
 export const bookClubApi = {
  recommendations: () => request('/book-club/recommendations'),
+ books: () => request('/book-club/books'),
+ comments: (bookKey) => request(`/book-club/books/${encodeURIComponent(bookKey)}/comments`),
+ createComment: (bookKey, payload) => request(`/book-club/books/${encodeURIComponent(bookKey)}/comments`, { method: 'POST', body: JSON.stringify(payload) }),
 };
 
 export const systemApi = {

@@ -165,7 +165,7 @@ export default function BookClubCard({
               onClick={() => onReview?.(book)}
             >
               <Sparkles size={16} />
-              Review
+              Comment
             </button>
 
             {isPurchasable && (
