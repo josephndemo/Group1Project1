@@ -51,7 +51,7 @@ export default function ReviewForm({
   return (
     <form ref={formRef} onSubmit={handleSubmit} className="bc-review-form">
       <div className="bc-review-form-header">
-        <span>Your Review</span>
+        <span>Your Comment</span>
         <h4>{bookTitle}</h4>
         <p className="bc-review-form-meta">Posting as {reviewerName}</p>
       </div>

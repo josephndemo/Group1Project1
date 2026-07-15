@@ -208,14 +208,14 @@ export default function BookClubPage({
           className="bc-review-modal-backdrop"
           role="dialog"
           aria-modal="true"
-          aria-label={`Review ${reviewModalBook.title}`}
+          aria-label={`Comment on ${reviewModalBook.title}`}
           onClick={closeReviewModal}
         >
           <div className="bc-review-modal" onClick={(event) => event.stopPropagation()}>
             <button
               type="button"
               className="bc-review-modal-close"
-              aria-label="Close review"
+              aria-label="Close comment dialog"
               onClick={closeReviewModal}
             >
               ×
